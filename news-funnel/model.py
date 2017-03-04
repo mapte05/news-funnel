@@ -136,6 +136,7 @@ def main(debug=False):
     print "INITIALIZING"
     print 80 * "="
     # prep = preprocess # TODO: take in salient parts of the data (i.e. max title length, article_length, vocab_size)
+    embeddings, train_examples, dev_set, test_set = load_and_preprocess_data
     config = Config()
 
 
