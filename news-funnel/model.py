@@ -84,34 +84,36 @@ class RushModel(Model):
         embedded_input = tf.nn.embedding_lookup(ids=self.input_placeholder, params=input_embeddings)
         
         U = tf.get_variable("U", shape=(self.config.context_size*self.config.embed_size, self.config.hidden_size), initializer=xavier_init)
-        b1 = tf.get_variable("b1", shape=(self.config.hidden_size,), initializer=zero_init)
+        b1 = tf.get_variable("b1", shape=(1, self.config.hidden_size), initializer=zero_init)
         
         V = tf.get_variable("V",  shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
         W = tf.get_variable("W", shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
-        b2 = tf.get_variable("b2", shape=(self.config.vocab_size,), initializer=zero_init)
+        b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=zero_init)
 
-        pred = []
+        logits = []
+        summary = []
         for i in range(self.config.summary_length):
-        	context = ([start_token]*self.config.context_size + pred)[-self.config.context_size:]
+        	context = ([start_token]*self.config.context_size + summary)[-self.config.context_size:]
         	embedded_context = tf.nn.embedding_lookup(ids=context, params=self.output_embeddings)
         	encoded = self.encode(embedded_input, embedded_context)
 
         	h = tf.tanh(tf.matmul(embedded_context, U) + b1)
-        	logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
-        	pred.append(tf.argmax(logits, axis=1))
-
-        return pred
-
+        	pred = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
+            
+            logits.append(pred)
+        	summary.append(tf.argmax(pred, axis=1))
+        
+        self.logits = tf.stack(logits, axis=1)
+        self.summary = summary
 
     def encode(self, embedded_input, embedded_context, method="BOW"):
         if method == "BOW":
-            return tf.sum(embedded_input, axis=1) / self.config.article_length
+            return tf.reduce_mean(embedded_input, axis=1)
         if method == "ATT":
             pass
 
     def add_loss_op(self):
-        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, self.labels_placeholder))
-        return loss
+        self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.logits, labels=self.summaries_placeholder))
         
      
 
