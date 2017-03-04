@@ -51,10 +51,6 @@ def load_and_preprocess_data():
     test_set = read_txt(os.path.join(config.data_path, config.test_file),
                           lowercase=config.lowercase)
     
-    # split our data into trian, dev, and test
-    train_set = train_set[:1000]
-    dev_set = dev_set[:500]
-    test_set = test_set[:500]
     print "took {:.2f} seconds".format(time.time() - start)
 
     print "Loading pretrained embeddings...",
