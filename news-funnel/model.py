@@ -23,6 +23,9 @@ class Config(object):
     batch_size = 2048
     n_epochs = 10
     lr = 0.001
+    
+    beam_size = 5
+    start_token = 0 # Use a rare word as the start token
 
 
 
@@ -74,14 +77,29 @@ class RushModel(Model):
         Returns:
             pred: tf.Tensor of shape (batch_size, n_classes)
         """
+
+        logits = []
+        summary = []
+        for i in range(self.config.summary_length):
+        	context = ([start_token]*self.config.context_size + summary)[-self.config.context_size:]
+            
+            logits.append(pred)
+        	summary.append(tf.argmax(pred, axis=1))
+        
+        self.logits = tf.stack(logits, axis=1)
+        self.summary = summary
+    
+    def do_prediction_step(input, context):
         xavier_init = tf.contrib.layers.xavier_initializer()
         zero_init = tf.zeros_initializer()
 
-        start_token = 0 # Use a rare word as the start token
-
         output_embeddings = tf.get_variable("E", self.word2vec_embeddings)
         input_embeddings = tf.get_variable("F", self.word2vec_embeddings)
-        embedded_input = tf.nn.embedding_lookup(ids=self.input_placeholder, params=input_embeddings)
+        encoding_embeddings = tf.get_variable("G", self.word2vec_embeddings)
+        
+        embedded_input = tf.nn.embedding_lookup(ids=input, params=input_embeddings)
+        embedded_context = tf.reshape(tf.nn.embedding_lookup(ids=context, params=self.output_embeddings), (-1, self.config.context_size*self.config.embed_size))
+        embedded_context_for_encoding = tf.reshape(tf.nn.embedding_lookup(ids=context, params=self.encoding_embeddings), (-1, self.config.context_size*self.config.embed_size))
         
         U = tf.get_variable("U", shape=(self.config.context_size*self.config.embed_size, self.config.hidden_size), initializer=xavier_init)
         b1 = tf.get_variable("b1", shape=(1, self.config.hidden_size), initializer=zero_init)
@@ -89,22 +107,12 @@ class RushModel(Model):
         V = tf.get_variable("V",  shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
         W = tf.get_variable("W", shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
         b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=zero_init)
-
-        logits = []
-        summary = []
-        for i in range(self.config.summary_length):
-        	context = ([start_token]*self.config.context_size + summary)[-self.config.context_size:]
-        	embedded_context = tf.nn.embedding_lookup(ids=context, params=self.output_embeddings)
-        	encoded = self.encode(embedded_input, embedded_context)
-
-        	h = tf.tanh(tf.matmul(embedded_context, U) + b1)
-        	pred = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
-            
-            logits.append(pred)
-        	summary.append(tf.argmax(pred, axis=1))
         
-        self.logits = tf.stack(logits, axis=1)
-        self.summary = summary
+        h = tf.tanh(tf.matmul(embedded_context, U) + b1)
+        encoded = self.encode(embedded_input, embedded_context_for_encoding)
+        logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
+        
+        return logits
 
     def encode(self, embedded_input, embedded_context, method="BOW"):
         if method == "BOW":
@@ -113,9 +121,37 @@ class RushModel(Model):
             pass
 
     def add_loss_op(self):
+        logits = []
+        padded_context = tf.stack(tf.tile(self.config.start_token, [self.config.context_size]), self.summaries_placeholder)
+        for i in range(self.config.summary_length):
+            context = tf.slice(padded_context, i, self.config.context_size)
+            logits.append(do_prediction_step(self.input_placeholder, context))
+        logits = tf.stack(logits, axis=1)
+    
         self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.logits, labels=self.summaries_placeholder))
         
-     
+    def predict(self):
+        padded_predictions = tf.tile(self.config.start_token, [self.config.batch_size, self.config.context_size])
+        for i in range(self.config.summary_length):
+            contexts = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
+            logits = do_prediction_step(self.input_placeholder, contexts)
+            padded_predictions = tf.stack([padded_predictions, tf.nn.arg_max(logits)], axis=-1)
+        return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
+        
+        """
+        # Beam search, to be completed
+        padded_predictions = tf.tile(self.config.start_token, [self.config.beam_size, self.config.batch_size, self.config.context_size])
+        prediction_logits = tf.tile(0, [self.config.beam_size, self.config.batch_size, 1])
+        for i in range(self.config.summary_length):
+            contexts = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
+            logits = tf.nn.log_softmax(logits=do_prediction_step(self.input_placeholder, contexts))
+        
+            logits_beam, indices_beam = tf.nn.top_k(input=logits, k=self.config.beam_size)
+            padded_predictions = tf.stack()
+            prediction_logits = 
+        """
+        
+        
 
 
     def add_training_op(self, loss):
