@@ -77,17 +77,18 @@ class RushModel(Model):
         xavier_init = tf.contrib.layers.xavier_initializer()
         zero_init = tf.zeros_initializer()
 
-        start_token = 0
+        start_token = 0 # Use a rare word as the start token
 
         output_embeddings = tf.get_variable("E", self.word2vec_embeddings)
         input_embeddings = tf.get_variable("F", self.word2vec_embeddings)
         embedded_input = tf.nn.embedding_lookup(ids=self.input_placeholder, params=input_embeddings)
         
-        W = tf.get_variable("W", shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
-        b1 = tf.get_variable("b1", shape=(self.config.vocab_size,), initializer=zero_init)
-        U = tf.get_variable("U", shape=(self.config.hidden_size, self.config.context_size*self.config.embed_size), initializer=xavier_init)
-        b2 = tf.get_variable("b2", shape=(self.config.context_size*self.config.embed_size), initializer=zero_init)
+        U = tf.get_variable("U", shape=(self.config.context_size*self.config.embed_size, self.config.hidden_size), initializer=xavier_init)
+        b1 = tf.get_variable("b1", shape=(self.config.hidden_size,), initializer=zero_init)
+        
         V = tf.get_variable("V",  shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
+        W = tf.get_variable("W", shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
+        b2 = tf.get_variable("b2", shape=(self.config.vocab_size,), initializer=zero_init)
 
         pred = []
         for i in range(self.config.summary_length):
@@ -95,8 +96,8 @@ class RushModel(Model):
         	embedded_context = tf.nn.embedding_lookup(ids=context, params=self.output_embeddings)
         	encoded = self.encode(embedded_input, embedded_context)
 
-        	h = tf.tanh(tf.matmul(y_c, U) + b2)
-        	logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b1
+        	h = tf.tanh(tf.matmul(embedded_context, U) + b1)
+        	logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
         	pred.append(tf.argmax(logits, axis=1))
 
         return pred
