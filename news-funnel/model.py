@@ -91,7 +91,7 @@ class RushModel(Model):
 
         pred = []
         for i in range(self.config.summary_length):
-        	context = ([start_token]*self.config.context_size + pred)[:-self.config.context_size]
+        	context = ([start_token]*self.config.context_size + pred)[-self.config.context_size:]
         	embedded_context = tf.nn.embedding_lookup(ids=context, params=self.output_embeddings)
         	encoded = self.encode(embedded_input, embedded_context)
 
@@ -109,6 +109,8 @@ class RushModel(Model):
     def add_loss_op(self):
         loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, self.labels_placeholder))
         return loss
+        
+     
 
 	def __init__(self, word2vec_embeddings):
 		self.word2vec_embeddings = word2vec_embeddings
