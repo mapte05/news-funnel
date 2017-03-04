@@ -15,7 +15,8 @@ class Config(object):
     n_features = 36
     vocab_size = None
     context_size = None
-    sentence_length = 9
+    summary_length = 9
+    article_length = 15
     dropout = 0.5
     embed_size = 300
     hidden_size = 200
@@ -29,7 +30,7 @@ class RushModel(Model):
 
 	def add_placeholders(self):
         self.input_placeholder = tf.placeholder(tf.int32, [None, self.config.article_length])
-        self.summaries_placeholder = tf.placeholder(tf.int32, [None, self.config.sentence_length])
+        self.summaries_placeholder = tf.placeholder(tf.int32, [None, self.config.summary_length])
         # self.dropout_placeholder = tf.placeholder(tf.float32, shape=())
 
 
@@ -76,7 +77,7 @@ class RushModel(Model):
         xavier_init = tf.contrib.layers.xavier_initializer()
         zero_init = tf.zeros_initializer()
 
-        start_token = tf.zeros()
+        start_token = 0
 
         W = tf.get_variable("W", shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
         b1 = tf.get_variable("b1", shape=(self.config.vocab_size,), initializer=zero_init)
@@ -85,14 +86,14 @@ class RushModel(Model):
         V = tf.get_variable("V",  shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
 
         pred = []
-        for i in range(self.config.sentence_length):
+        for i in range(self.config.summary_length):
         	context = ([start_token]*self.config.context_size + pred)[:-self.config.context_size]
         	embedded_context = tf.nn.embedding_lookup(ids=context, params=self.embeddings)
-        	encoded = self.encode(embedded_context, self.input_placeholder)
+        	encoded = self.encode(context, self.input_placeholder)
 
         	h = tf.tanh(tf.matmul(y_c, U) + b2)
-        	logits = tf.matmul(h, V) + tf.matmul(W, encoded) + b1
-        	pred.append(tf.argmax(tf.nn.softmax(logits), axis=1))
+        	logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b1
+        	pred.append(tf.argmax(logits, axis=1))
 
         return pred
 
