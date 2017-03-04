@@ -63,7 +63,7 @@ class RushModel(Model):
         Returns:
             embeddings: tf.Tensor of shape (None, n_features*embed_size)
         """
-        self.embeddings = tf.Variable(self.word2vec_embeddings)
+        #self.embeddings = tf.get_variable("E", self.word2vec_embeddings)
         # batch_embeddings = tf.nn.embedding_lookup(params=embeddings, ids=self.input_placeholder)
         # embeddings = tf.reshape(batch_embeddings, [-1, self.config.n_features * self.config.embed_size])
         return embeddings
@@ -79,6 +79,10 @@ class RushModel(Model):
 
         start_token = 0
 
+        output_embeddings = tf.get_variable("E", self.word2vec_embeddings)
+        input_embeddings = tf.get_variable("F", self.word2vec_embeddings)
+        embedded_input = tf.nn.embedding_lookup(ids=self.input_placeholder, params=input_embeddings)
+        
         W = tf.get_variable("W", shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
         b1 = tf.get_variable("b1", shape=(self.config.vocab_size,), initializer=zero_init)
         U = tf.get_variable("U", shape=(self.config.hidden_size, self.config.context_size*self.config.embed_size), initializer=xavier_init)
@@ -88,8 +92,8 @@ class RushModel(Model):
         pred = []
         for i in range(self.config.summary_length):
         	context = ([start_token]*self.config.context_size + pred)[:-self.config.context_size]
-        	embedded_context = tf.nn.embedding_lookup(ids=context, params=self.embeddings)
-        	encoded = self.encode(context, self.input_placeholder)
+        	embedded_context = tf.nn.embedding_lookup(ids=context, params=self.output_embeddings)
+        	encoded = self.encode(embedded_input, embedded_context)
 
         	h = tf.tanh(tf.matmul(y_c, U) + b2)
         	logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b1
@@ -98,14 +102,9 @@ class RushModel(Model):
         return pred
 
 
-    def encode(self, y, x):
-
-
-
-
-
-
-
+    def encode(self, embedded_input, embedded_context, method="BOW"):
+        if method == "BOW":
+            return tf.sum(embedded_input, axis=1) / self.config.article_length
 
 	def __init__(self, word2vec_embeddings):
 		self.word2vec_embeddings = word2vec_embeddings
