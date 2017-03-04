@@ -105,6 +105,8 @@ class RushModel(Model):
     def encode(self, embedded_input, embedded_context, method="BOW"):
         if method == "BOW":
             return tf.sum(embedded_input, axis=1) / self.config.article_length
+        if method == "ATT":
+            pass
 
     def add_loss_op(self):
         loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, self.labels_placeholder))
