@@ -203,17 +203,23 @@ def train_main(config_file, debug=False, run_dev=False):
 
     print "Loading training data...",
     start = time.time()
-    train_articles, train_summaries = load_data(config.data_path, config.train_article_file, config.train_title_file)
+    train_articles = load_data(config.data_path, config.train_article_file)
     config.article_length = article_length = max([len(x) for x in train_articles])
+    train_articles = preprocess_data(train_articles, token_to_id, article_length)
+    
+    train_summaries = load_data(config.data_path, config.train_title_file)
     config.summary_length = summary_length = max([len(x) for x in train_summaries])
-    train_articles, train_summaries = preprocess_data(train_articles, train_summaries, token_to_id, article_length, summary_length)
+    train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
     print "took {:.2f} seconds".format(time.time() - start)
 
     if run_dev:
         print "Loading dev data...",
         start = time.time()
-        dev_articles, dev_summaries = load_data(config.data_path, config.dev_article_file, config.dev_title_file)
-        dev_articles, dev_summaries = preprocess_data(dev_articles, dev_summaries, token_to_id, config.article_length, config.summary_length)
+        dev_articles = load_data(config.data_path, config.dev_article_file)
+        dev_articles = preprocess_data(dev_articles, token_to_id, config.article_length)
+        
+        dev_summaries = load_data(config.data_path, config.dev_title_file)
+        dev_summaries = preprocess_data(dev_summaries, token_to_id, config.summary_length)
         print "took {:.2f} seconds".format(time.time() - start)
 
     print "writing Config to file"
@@ -237,9 +243,9 @@ def test_main(config_file, param_file, load_config_from_file=True, debug=False):
 
     print >> sys.stderr, "Loading test data...",
     start = time.time()
-    # TODO: break up load_data and preprocess_data
-    test_articles, test_summaries = load_data(config.data_path, config.test_article_file, config.test_title_file)
-    test_articles, test_summaries = preprocess_data(test_articles, test_summaries, token_to_id, config.article_length, config.summary_length)
+    
+    test_articles = load_data(config.data_path, config.test_article_file)
+    test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
     model = RushModel(param_file=param_file)
