@@ -1,3 +1,12 @@
+'''
+correct use
+
+training: python model.py train config_file
+testing: python model.py test config_file
+
+'''
+
+
 import tensorflow as tf
 import numpy as np
 import time
@@ -169,8 +178,14 @@ class RushModel(Model):
         self.build()
 
 
+def writeConfig(config, config_file):
+    pass
 
-def train_main(debug=False):
+def loadConfig(config_file):
+    pass
+
+
+def train_main(config_file, debug=False, run_dev=False):
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
@@ -190,34 +205,39 @@ def train_main(debug=False):
     train_articles, train_summaries = preprocess_data(train_articles, train_summaries, token_to_id, article_length, summary_length)
     print "took {:.2f} seconds".format(time.time() - start)
 
-    print "Loading dev data...",
-    start = time.time()
-    dev_articles, dev_summaries = load_data(config.data_path, config.dev_article_file, config.dev_title_file)
-    article_length = max([len(x) for x in dev_articles])
-    summary_length = max([len(x) for x in dev_summaries])
-    dev_articles, dev_summaries = preprocess_data(dev_articles, dev_summaries, token_to_id, article_length, summary_length)
-    print "took {:.2f} seconds".format(time.time() - start)
+    if run_dev:
+        print "Loading dev data...",
+        start = time.time()
+        dev_articles, dev_summaries = load_data(config.data_path, config.dev_article_file, config.dev_title_file)
+        dev_articles, dev_summaries = preprocess_data(dev_articles, dev_summaries, token_to_id, config.article_length, config.summary_length)
+        print "took {:.2f} seconds".format(time.time() - start)
+
+    print "writing Config to file"
+    writeConfig(config, config_file)
+
+
+
+def test_main(config_file, load_config_from_file=True, debug=False):
+
+    config = None
+
+    if load_config_from_file:
+        config = loadConfig(config_file)
+    else:
+        config = Config()
 
     print "Loading test data...",
     start = time.time()
     test_articles, test_summaries = load_data(config.data_path, config.test_article_file, config.test_title_file)
-    article_length = max([len(x) for x in test_articles])
-    summary_length = max([len(x) for x in test_summaries])
     test_articles, test_summaries = preprocess_data(test_articles, test_summaries, token_to_id, article_length, summary_length)
     print "took {:.2f} seconds".format(time.time() - start)
 
-    # TODO: take in salient parts of the data (i.e. max title length, article_length, vocab_size)
-
-
-def test_main(debug=False):
-    pass
-
 
 if __name__ == '__main__':
-    assert(len(args) == 2)
+    assert(len(args) == 3) # third argument is path to config file
     if args[1] == "train":
-        train_main()
+        train_main(args[2])
     elif args[1] == "test":
-        test_main()
+        test_main(args[2])
     else:
         print "please specify your model: \"train\" or \"test\""
