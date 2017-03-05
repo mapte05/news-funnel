@@ -149,8 +149,6 @@ class RushModel:
 		self.word2vec_embeddings = word2vec_embeddings
         self.config = config
         
-        self.add_placeholders()
-        
 
 
 def write_config(config, config_file):
