@@ -10,6 +10,7 @@ import numpy as np
 import time
 import pickle
 import sys
+from utils.model_utils import load_embeddings, load_data, preprocess_data
 
 
 class Config(object):
@@ -46,7 +47,7 @@ class Config(object):
 
 class RushModel:
 
-	def add_placeholders(self):
+    def add_placeholders(self):
         self.input_placeholder = tf.placeholder(tf.int32, [None, self.config.article_length])
         self.summaries_placeholder = tf.placeholder(tf.int32, [None, self.config.summary_length])
         # self.dropout_placeholder = tf.placeholder(tf.float32, shape=())
@@ -179,7 +180,7 @@ def train_main(config_file="config/config_file", debug=False, run_dev=False):
 
     print "Loading embedding data...",
     start = time.time()
-    embeddings, token_to_id, id_to_token = load_embeddings(config.data_path, config.embedding_file)
+    embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file)
     config.vocab_size = len(embeddings)
     config.start_token = token_to_id('<START>')
     print "took {:.2f} seconds".format(time.time() - start)
@@ -277,10 +278,10 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 
 
 if __name__ == '__main__':
-    assert(len(args) == 2 or len(args) == 3)
-    if args[1] == "train":
+    assert(len(sys.argv) == 2 or len(sys.argv) == 3)
+    if sys.argv[1] == "train":
         train_main()
-    elif args[1] == "test":
+    elif sys.argv[1] == "test":
         test_main(arg[2])
     else:
         print "please specify your model: \"train\" or \"test\""
