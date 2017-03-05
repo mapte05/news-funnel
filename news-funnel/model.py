@@ -1,18 +1,14 @@
 '''
 correct use
 
-training: python model.py train config_file
-testing: python model.py test config_file
+training: python model.py train config/config_file
+testing: python model.py test config/config_file
 
 '''
-
-
 import tensorflow as tf
 import numpy as np
 import time
-
-from model import Model
-
+import pickle
 
 
 class Config(object):
@@ -48,7 +44,7 @@ class Config(object):
 
 
 
-class RushModel(Model):
+class RushModel:
 
 	def add_placeholders(self):
         self.input_placeholder = tf.placeholder(tf.int32, [None, self.config.article_length])
@@ -178,11 +174,14 @@ class RushModel(Model):
         self.build()
 
 
-def writeConfig(config, config_file):
-    pass
+def write_config(config, config_file):
+    with open(config_file, 'wb') as outf:
+        pickle.dump(config, outf, pickle.HIGHEST_PROTOCOL)
 
-def loadConfig(config_file):
-    pass
+def load_config(config_file):
+    with open(config_file, 'rb') as inpf:
+        config = pickle.load(inpf)
+    return config
 
 
 def train_main(config_file, debug=False, run_dev=False):
@@ -213,16 +212,15 @@ def train_main(config_file, debug=False, run_dev=False):
         print "took {:.2f} seconds".format(time.time() - start)
 
     print "writing Config to file"
-    writeConfig(config, config_file)
+    write_config(config, config_file)
 
 
 
 def test_main(config_file, load_config_from_file=True, debug=False):
 
     config = None
-
     if load_config_from_file:
-        config = loadConfig(config_file)
+        config = load_config(config_file)
     else:
         config = Config()
 
