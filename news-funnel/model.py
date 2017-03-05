@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import time
 
 from model import Model
 
@@ -13,14 +14,14 @@ class Config(object):
     instantiation.
     """
     n_features = 36
-    vocab_size = None
+    vocab_size = None # set during preprocessing
     context_size = 5 # taken from Rush (C)
-    summary_length = 9
-    article_length = 15
+    summary_length = None # set during preprocessing
+    article_length = None # set during preprocessing
     embed_size = 200 # taken from Rush (D)
     hidden_size = 400 # taken from Rush (H)
     batch_size = 64 # taken from Rush
-    n_epochs = 10
+    n_epochs = 15 # taken from Rush
     n_layers = 3 # taken from Rush (L)
     lr = 0.05 # taken from Rush
     smoothing_window = 2 # taken from Rush (Q)
@@ -34,7 +35,6 @@ class Config(object):
     dev_title_file = 'train/valid.title.filter.txt'
     test_article_file = 'giga/input.txt' # also need to test on duc2003/duc2004
     test_title_file = 'giga/task1_ref0.txt'
-
     embedding_file = 'glove.6B.50d.txt' #TODO: replace with 'glove.6B.200d.txt
 
 
@@ -69,18 +69,6 @@ class RushModel(Model):
         if summaries_batch is not None:
             feed_dict[self.summaries_placeholder] = summaries_batch
         return feed_dict
-
-
-    def add_embedding(self):
-        """
-        Returns:
-            embeddings: tf.Tensor of shape (None, n_features*embed_size)
-        """
-        #self.embeddings = tf.get_variable("E", self.word2vec_embeddings)
-        # batch_embeddings = tf.nn.embedding_lookup(params=embeddings, ids=self.input_placeholder)
-        # embeddings = tf.reshape(batch_embeddings, [-1, self.config.n_features * self.config.embed_size])
-        return embeddings
-
 
     def add_prediction_op(self):
         """
@@ -182,21 +170,54 @@ class RushModel(Model):
 
 
 
-def main(debug=False):
+def train_main(debug=False):
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
     config = Config()
-    embeddings = load_and_preprocess_embeddings(config.data_path, config.embedding_file)
-    train_examples, dev_set, test_set = load_and_preprocess_data(config.data_path, config.train_article_file, config.train_title_file, embeddings, "train") # TODO: take in salient parts of the data (i.e. max title length, article_length, vocab_size)
-    train_examples, dev_set, test_set = load_and_preprocess_data(config.data_path, config.dev_article_file, config.dev_title_file, embeddings, "dev")
-    train_examples, dev_set, test_set = load_and_preprocess_data(config.data_path, config.test_article_file, config.test_title_file, embeddings, "test")
+
+    print "Loading embedding data...",
+    start = time.time()
+    embeddings, token_to_id, id_to_token = load_embeddings(config.data_path, config.embedding_file)
+    config.vocab_size = len(embeddings)
+    print "took {:.2f} seconds".format(time.time() - start)
+
+    print "Loading training data...",
+    start = time.time()
+    train_articles, train_summaries = load_data(config.data_path, config.train_article_file, config.train_title_file)
+    config.article_length = article_length = max([len(x) for x in train_articles])
+    config.summary_length = summary_length = max([len(x) for x in train_summaries])
+    train_articles, train_summaries = preprocess_data(train_articles, train_summaries, token_to_id, article_length, summary_length)
+    print "took {:.2f} seconds".format(time.time() - start)
+
+    print "Loading dev data...",
+    start = time.time()
+    dev_articles, dev_summaries = load_data(config.data_path, config.dev_article_file, config.dev_title_file)
+    article_length = max([len(x) for x in dev_articles])
+    summary_length = max([len(x) for x in dev_summaries])
+    dev_articles, dev_summaries = preprocess_data(dev_articles, dev_summaries, token_to_id, article_length, summary_length)
+    print "took {:.2f} seconds".format(time.time() - start)
+
+    print "Loading test data...",
+    start = time.time()
+    test_articles, test_summaries = load_data(config.data_path, config.test_article_file, config.test_title_file)
+    article_length = max([len(x) for x in test_articles])
+    summary_length = max([len(x) for x in test_summaries])
+    test_articles, test_summaries = preprocess_data(test_articles, test_summaries, token_to_id, article_length, summary_length)
+    print "took {:.2f} seconds".format(time.time() - start)
+
+    # TODO: take in salient parts of the data (i.e. max title length, article_length, vocab_size)
 
 
-    # get max headline length
-    config.summary_length = max([len(x.split()) for x in summaries])
-
+def test_main(debug=False):
+    pass
 
 
 if __name__ == '__main__':
-    main()
+    assert(len(args) == 2)
+    if args[1] == "train":
+        train_main()
+    elif args[1] == "test":
+        test_main()
+    else:
+        print "please specify your model: \"train\" or \"test\""
