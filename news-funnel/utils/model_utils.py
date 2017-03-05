@@ -2,13 +2,9 @@ import time
 import os
 import logging
 from collections import Counter
-from general_utils import get_minibatches
+from ps2_general_utils import get_minibatches
 
 import numpy as np
-
-
-class Config(object):
-    lowercase = True
 
 
 '''
@@ -25,61 +21,51 @@ def minibatches(data, batch_size):
 '''
 Reads in the text files and outputs Python lists
 '''
-def read_txt(article_file, title_file, lowercase=False, max_example=None):
+def read_txt(article_file, title_file):
     with open(article_file) as af:
         sentences = list(af.readlines())
     with open(title_file) as tf:
         summaries = list(tf.readlines())
-    return [sentences, summaries]
-
-
-def get_tokens(data_set):
-    result = set()
-    sentences, summaries = data_set
-    for s in sentences:
-        for w in s.strip().split():
-            result.add(w)
-    for s in summaries:
-        for w in s.strip().split():
-            result.add(w)
-    return result
+    return sentences, summaries
 
 
 '''
 load word embeddings
 '''
-def load_and_preprocess_embeddings(data_path, embeddings_file):
-    print "Loading pretrained embeddings...",
-    start = time.time()
+def load_embeddings(embedding_file, normalize=lambda token: token.lower()):
+    embedding_dimension = None
+    for line in open(embedding_file).readlines():
+        embedding_dimension = len(line.strip().split()) - 1
+        break
 
+    embeddings = []
+    id_to_token = []
+    token_to_id = {}
+    
+    # Special start tokens
+    special_tokens = ['<START>', '<UNKNOWN>']
+    for token in special_tokens:
+        token_to_id[token] = len(embeddings)
+        id_to_token.append(token)
+        embeddings.append(np.random.normal(0, 0.9, (embedding_dimension,)))        
+    
     # load the embeddings from a file
-    word_vectors = {}
-    for line in open(os.path.join(config.data_path,config.embedding_file)).readlines():
+    for line in open(embedding_file).readlines():
         sp = line.strip().split()
-        word_vectors[sp[0]] = [float(x) for x in sp[1:]]
-    embeddings_matrix = np.asarray(np.random.normal(0, 0.9, (parser.n_tokens, 50)), dtype='float32')
+        sp[0] = normalize(sp[0])
+        
+        token_to_id[sp[0]] = len(embeddings)
+        id_to_token.append(sp[0])
+        embeddings.append(np.array([float(x) for x in sp[1:]]))
 
-    tokens = get_tokens(train_set)
-    tokens |= get_tokens(dev_set)
-    tokens = list(tokens)
+    return embeddings, token_to_id, id_to_token
 
-    for token in tokens:
-        i = parser.tok2id[token]
-        if token in word_vectors:
-            embeddings_matrix[i] = word_vectors[token]
-        elif token.lower() in word_vectors:
-            embeddings_matrix[i] = word_vectors[token.lower()]
-    print "took {:.2f} seconds".format(time.time() - start)
-
-
-    return embeddings_matrix
 
     
 '''
 Load dataset (i.e. dev, test, verification)
 '''
 def load_and_preprocess_data(data_path, article_file, title_file, embeddings, dataset_type):
-    config = Config()
 
     print "Loading", dataset_type, "data...",
     start = time.time()
