@@ -116,7 +116,7 @@ class RushModel(Model):
         if method == "BOW":
             return tf.reduce_mean(embedded_input, axis=1)
         if method == "ATT":
-            pass
+            raise NotImplementedError
 
     def add_loss_op(self):
         logits = []
