@@ -8,15 +8,7 @@ import numpy as np
 
 
 class Config(object):
-    data_path = './data'
-    train_article_file = 'train/valid.article.filter.txt' # TODO: replace at actual training time with 'train/train.article.txt'
-    train_title_file = 'train/valid.title.filter.txt' # TODO: replace at actual training time with 'train/train.title.txt'
-    dev_article_file = 'train/valid.article.filter.txt'
-    dev_title_file = 'train/valid.title.filter.txt'
-    test_article_file = 'giga/input.txt' # also need to test on duc2003/duc2004
-    test_title_file = 'giga/task1_ref0.txt'
-
-    embedding_file = 'glove.6B.50d.txt' #TODO: replace with 'glove.6B.200d.txt
+    lowercase = True
 
 
 '''
@@ -52,31 +44,11 @@ def get_tokens(data_set):
             result.add(w)
     return result
 
-    
+
 '''
-Load
-- dataset created by Rush and create dev and test sets
-- word embeddings
+load word embeddings
 '''
-def load_and_preprocess_data():
-    config = Config()
-
-    print "Loading data...",
-    start = time.time()
-
-    # read in the data from the files - [sentences, titles]
-    train_set = read_txt(os.path.join(config.data_path, config.train_article_file), 
-                            os.path.join(config.data_path, config.train_title_file),
-                           lowercase=config.lowercase)
-    dev_set = read_txt(os.path.join(config.data_path, config.dev_article_file),
-                        os.path.join(config.data_path, config.dev_title_file), 
-                         lowercase=config.lowercase)
-    test_set = read_txt(os.path.join(config.data_path, config.test_article_file),
-                        os.path.join(config.data_path, config.test_title_file),
-                          lowercase=config.lowercase)
-    
-    print "took {:.2f} seconds".format(time.time() - start)
-
+def load_and_preprocess_embeddings(data_path, embeddings_file):
     print "Loading pretrained embeddings...",
     start = time.time()
 
@@ -99,19 +71,32 @@ def load_and_preprocess_data():
             embeddings_matrix[i] = word_vectors[token.lower()]
     print "took {:.2f} seconds".format(time.time() - start)
 
-    print "Vectorizing data...",
-    start = time.time()
 
-    # TODO turn words into vectors using our emeddings
-    train_set = None
-    dev_set = None
-    test_set = None
+    return embeddings_matrix
+
+    
+'''
+Load dataset (i.e. dev, test, verification)
+'''
+def load_and_preprocess_data(data_path, article_file, title_file, embeddings, dataset_type):
+    config = Config()
+
+    print "Loading", dataset_type, "data...",
+    start = time.time()
+    article_set = read_txt(os.path.join(data_path, article_file),   # read in the data from the files - [sentences, titles]
+                           lowercase=config.lowercase)
+    title_set = read_txt(os.path.join(data_path, title_file),   # read in the data from the files - [sentences, titles]
+                           lowercase=config.lowercase)
     print "took {:.2f} seconds".format(time.time() - start)
 
-    print "Preprocessing training data..."
-    train_examples = train_set # TODO do something with train_set to make the training examples
+    print "Vectorizing", dataset_type, "data...",
+    start = time.time()
+    article_set = None   # TODO turn words into vectors using our embeddings
+    title_set = None
+    print "took {:.2f} seconds".format(time.time() - start)
 
-    return embeddings_matrix, train_examples, dev_set, test_set,
+    return article_set, title_set
+
 
 if __name__ == '__main__':
     pass

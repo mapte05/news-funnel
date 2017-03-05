@@ -27,6 +27,16 @@ class Config(object):
     beam_size = 5
     start_token = 0 # Use a rare word as the start token
 
+    data_path = './data'
+    train_article_file = 'train/valid.article.filter.txt' # TODO: replace at actual training time with 'train/train.article.txt'
+    train_title_file = 'train/valid.title.filter.txt' # TODO: replace at actual training time with 'train/train.title.txt'
+    dev_article_file = 'train/valid.article.filter.txt'
+    dev_title_file = 'train/valid.title.filter.txt'
+    test_article_file = 'giga/input.txt' # also need to test on duc2003/duc2004
+    test_title_file = 'giga/task1_ref0.txt'
+
+    embedding_file = 'glove.6B.50d.txt' #TODO: replace with 'glove.6B.200d.txt
+
 
 
 class RushModel(Model):
@@ -176,9 +186,15 @@ def main(debug=False):
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
-    # prep = preprocess # TODO: take in salient parts of the data (i.e. max title length, article_length, vocab_size)
-    embeddings, train_examples, dev_set, test_set = load_and_preprocess_data
     config = Config()
+    embeddings = load_and_preprocess_embeddings(config.data_path, config.embedding_file)
+    train_examples, dev_set, test_set = load_and_preprocess_data(config.data_path, config.train_article_file, config.train_title_file, embeddings, "train") # TODO: take in salient parts of the data (i.e. max title length, article_length, vocab_size)
+    train_examples, dev_set, test_set = load_and_preprocess_data(config.data_path, config.dev_article_file, config.dev_title_file, embeddings, "dev")
+    train_examples, dev_set, test_set = load_and_preprocess_data(config.data_path, config.test_article_file, config.test_title_file, embeddings, "test")
+
+
+    # get max headline length
+    config.summary_length = max([len(x.split()) for x in summaries])
 
 
 
