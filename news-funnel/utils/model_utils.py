@@ -19,17 +19,6 @@ def minibatches(data, batch_size):
 
 
 '''
-Reads in the text files and outputs Python lists
-'''
-def read_txt(article_file, title_file):
-    with open(article_file) as af:
-        sentences = list(af.readlines())
-    with open(title_file) as tf:
-        summaries = list(tf.readlines())
-    return sentences, summaries
-
-
-'''
 load word embeddings
 '''
 def load_embeddings(embedding_file, normalize=lambda token: token.lower()):
@@ -69,10 +58,12 @@ def load_and_preprocess_data(data_path, article_file, title_file, embeddings, da
 
     print "Loading", dataset_type, "data...",
     start = time.time()
-    article_set = read_txt(os.path.join(data_path, article_file),   # read in the data from the files - [sentences, titles]
-                           lowercase=config.lowercase)
-    title_set = read_txt(os.path.join(data_path, title_file),   # read in the data from the files - [sentences, titles]
-                           lowercase=config.lowercase)
+    with open(os.path.join(data_path, article_file)) as af:
+        sentences = list(af.readlines())
+    with open(os.path.join(data_path, title_file)) as tf:
+        summaries = list(tf.readlines())
+    article_set = read_txt(os.path.join(data_path, article_file))
+    title_set = read_txt(os.path.join(data_path, title_file))
     print "took {:.2f} seconds".format(time.time() - start)
 
     print "Vectorizing", dataset_type, "data...",
