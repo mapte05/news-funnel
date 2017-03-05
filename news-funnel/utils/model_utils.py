@@ -46,34 +46,37 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower()):
         token_to_id[sp[0]] = len(embeddings)
         id_to_token.append(sp[0])
         embeddings.append(np.array([float(x) for x in sp[1:]]))
-
-    return embeddings, token_to_id, id_to_token
-
+        
+    token_to_id_fn = lambda token: token_to_id[normalize(token)] if normalize(token) in token_to_id else token_to_id['<UNKNOWN>']
+    return embeddings, token_to_id_fn, id_to_token
 
     
 '''
 Load dataset (i.e. dev, test, verification)
 '''
-def load_and_preprocess_data(data_path, article_file, title_file, embeddings, dataset_type):
-
-    print "Loading", dataset_type, "data...",
-    start = time.time()
+def load_data(data_path, article_file, title_file):
+    articles = []
     with open(os.path.join(data_path, article_file)) as af:
-        sentences = list(af.readlines())
+        for article in af.readlines():
+            articles.append(article.split())
+    
+    summaries = []
     with open(os.path.join(data_path, title_file)) as tf:
-        summaries = list(tf.readlines())
-    article_set = read_txt(os.path.join(data_path, article_file))
-    title_set = read_txt(os.path.join(data_path, title_file))
-    print "took {:.2f} seconds".format(time.time() - start)
+        for summary in tf.readlines():
+            summaries.append(article.split())
 
-    print "Vectorizing", dataset_type, "data...",
-    start = time.time()
-    article_set = None   # TODO turn words into vectors using our embeddings
-    title_set = None
-    print "took {:.2f} seconds".format(time.time() - start)
+    return articles, summaries
 
-    return article_set, title_set
-
+def preprocess_data(articles, summaries, token_to_id, article_length, summary_length):
+    summaries = np.array([[token_to_id(word) for word in sentence] for sentence in summaries], ndmin=summary_length)
+    if summaries.shape[1] >= summary_length:
+        summaries = summaries[:, 0:summary_length]
+    
+    articles = np.array([[token_to_id(word) for word in sentence] for sentence in articles], ndmin=article_length)
+    if articles.shape[1] >= article_length:
+        articles = articles[:, 0:article_length]
+    return articles, summaries
+    
 
 if __name__ == '__main__':
     pass
