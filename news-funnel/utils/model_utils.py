@@ -54,9 +54,9 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower()):
 '''
 Load dataset (i.e. dev, test, verification)
 '''
-def load_data(data_path, article_file):
+def load_data(article_file):
     articles = []
-    with open(os.path.join(data_path, article_file)) as af:
+    with open(article_file) as af:
         for article in af.readlines():
             articles.append(article.split())
     return articles
