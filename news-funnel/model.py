@@ -77,26 +77,27 @@ class RushModel:
         xavier_init = tf.contrib.layers.xavier_initializer()
         zero_init = tf.zeros_initializer()
 
-        output_embeddings = tf.get_variable("E", self.word2vec_embeddings)
-        input_embeddings = tf.get_variable("F", self.word2vec_embeddings)
-        encoding_embeddings = tf.get_variable("G", self.word2vec_embeddings)
+        with tf.variable_scope("prediction_step", reuse=True):
+            output_embeddings = tf.get_variable("E", self.word2vec_embeddings)
+            input_embeddings = tf.get_variable("F", self.word2vec_embeddings)
+            encoding_embeddings = tf.get_variable("G", self.word2vec_embeddings)
+            
+            embedded_input = tf.nn.embedding_lookup(ids=input, params=input_embeddings)
+            embedded_context = tf.reshape(tf.nn.embedding_lookup(ids=context, params=self.output_embeddings), (-1, self.config.context_size*self.config.embed_size))
+            embedded_context_for_encoding = tf.reshape(tf.nn.embedding_lookup(ids=context, params=self.encoding_embeddings), (-1, self.config.context_size*self.config.embed_size))
+            
+            U = tf.get_variable("U", shape=(self.config.context_size*self.config.embed_size, self.config.hidden_size), initializer=xavier_init)
+            b1 = tf.get_variable("b1", shape=(1, self.config.hidden_size), initializer=zero_init)
+            
+            V = tf.get_variable("V",  shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
+            W = tf.get_variable("W", shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
+            b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=zero_init)
+            
+            h = tf.tanh(tf.matmul(embedded_context, U) + b1)
+            encoded = self.encode(embedded_input, embedded_context_for_encoding)
+            logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
         
-        embedded_input = tf.nn.embedding_lookup(ids=input, params=input_embeddings)
-        embedded_context = tf.reshape(tf.nn.embedding_lookup(ids=context, params=self.output_embeddings), (-1, self.config.context_size*self.config.embed_size))
-        embedded_context_for_encoding = tf.reshape(tf.nn.embedding_lookup(ids=context, params=self.encoding_embeddings), (-1, self.config.context_size*self.config.embed_size))
-        
-        U = tf.get_variable("U", shape=(self.config.context_size*self.config.embed_size, self.config.hidden_size), initializer=xavier_init)
-        b1 = tf.get_variable("b1", shape=(1, self.config.hidden_size), initializer=zero_init)
-        
-        V = tf.get_variable("V",  shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
-        W = tf.get_variable("W", shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
-        b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=zero_init)
-        
-        h = tf.tanh(tf.matmul(embedded_context, U) + b1)
-        encoded = self.encode(embedded_input, embedded_context_for_encoding)
-        logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
-        
-        return logits
+            return logits
 
     def encode(self, embedded_input, embedded_context, method="BOW"):
         if method == "BOW":
