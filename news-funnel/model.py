@@ -14,16 +14,16 @@ class Config(object):
     """
     n_features = 36
     vocab_size = None
-    context_size = None
+    context_size = 5 # taken from Rush (C)
     summary_length = 9
     article_length = 15
-    dropout = 0.5
-    embed_size = 300
-    hidden_size = 200
-    batch_size = 2048
+    embed_size = 200 # taken from Rush (D)
+    hidden_size = 400 # taken from Rush (H)
+    batch_size = 64 # taken from Rush
     n_epochs = 10
-    lr = 0.001
-    
+    n_layers = 3 # taken from Rush (L)
+    lr = 0.05 # taken from Rush
+    smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
     start_token = 0 # Use a rare word as the start token
 
