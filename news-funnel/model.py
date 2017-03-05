@@ -1,8 +1,8 @@
 '''
 correct use
 
-training: python model.py train config/config_file
-testing: python model.py test config/config_file
+training: python model.py train
+testing: python model.py test
 
 '''
 import tensorflow as tf
@@ -143,30 +143,6 @@ class RushModel:
             train_op: The Op for training.
         """
         return tf.train.AdamOptimizer(learning_rate=self.config.lr).minimize(loss)
-
-    def get_training_batch(self, articles, summaries):
-        return tf.train.shuffle_batch([articles, summaries], 
-            batch_size=self.config.batch_size,
-            num_threads=1,
-            capacity=50000,
-            min_after_dequeue=10000,
-            enqueue_many=True)
-
-    def train(self, articles, summaries, epoch_limit):
-        #epochs = tf.Variable(0)
-        #tf.count_up_to(epochs, epoch_limit)
-    
-        article_batch, sumary_batch = get_training_batch(self, articles, summaries)
-        loss_op = self.add_loss_op(article_batch, sumary_batch)
-        training_op = self.add_training_op(loss_op)
-    
-        init = tf.global_variables_initializer()
-        with tf.Session() as sess:
-            sess.run(init)
-            tf.train.start_queue_runners(sess=sess)
-            while True:
-                loss, _ = sess.run([loss, training_op])
-                print loss
                 
 
 	def __init__(self, word2vec_embeddings):
@@ -187,7 +163,16 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file, debug=False, run_dev=False):
+def get_training_batch(articles, summaries):
+        return tf.train.shuffle_batch([articles, summaries], 
+            batch_size=self.config.batch_size,
+            num_threads=1,
+            capacity=50000,
+            min_after_dequeue=10000,
+            enqueue_many=True)
+
+
+def train_main(config_file="config/config_file", debug=False, run_dev=False):
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
@@ -225,8 +210,33 @@ def train_main(config_file, debug=False, run_dev=False):
     write_config(config, config_file)
 
 
+    init = tf.global_variables_initializer()
+    saver = tf.train.Saver()
+    with tf.Session() as sess:
+        sess.run(init)
+        counter = 0
 
-def test_main(config_file, param_file, load_config_from_file=True, debug=False):
+        print 80 * "="
+        print "TRAINING"
+        print 80 * "="
+        for epoch in range(config.n_epochs):
+            article_batch, summary_batch = get_training_batch(self, train_articles, train_summaries)
+            loss_op = self.add_loss_op(article_batch, summary_batch)
+            training_op = self.add_training_op(loss_op)
+            tf.train.start_queue_runners(sess=sess)
+            try:
+                while True:
+                    counter += 1
+                    if counter % 1000 == 0:
+                        saver.save(sess, 'variables/news-funnel-model', global_step=counter)
+                    loss, _ = sess.run([loss_op, training_op])
+                    print "loss:", loss
+            except tf.errors.OutOfRangeError:
+                print "end of epoch #", epoch, "..."
+
+
+
+def test_main(config_file="config/config_file", param_file, load_config_from_file=True, debug=False):
 
     config = None
     if load_config_from_file:
@@ -265,7 +275,7 @@ def test_main(config_file, param_file, load_config_from_file=True, debug=False):
             pass
 
 if __name__ == '__main__':
-    assert(len(args) == 3) # third argument is path to config file
+    assert(len(args) == 2)
     if args[1] == "train":
         train_main(args[2])
     elif args[1] == "test":
