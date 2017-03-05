@@ -47,12 +47,9 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower()):
         id_to_token.append(sp[0])
         embeddings.append(np.array([float(x) for x in sp[1:]]))
         
-    #token_to_id_fn = lambda token: token_to_id[normalize(token)] if normalize(token) in token_to_id else token_to_id['<UNKNOWN>']
-    return embeddings, token_to_id, id_to_token
+    token_to_id_fn = lambda token: token_to_id[normalize(token)] if normalize(token) in token_to_id else token_to_id['<UNKNOWN>']
+    return embeddings, token_to_id_fn, id_to_token
 
-
-def vectorize(sentence, token_to_id, sentence_length):
-    return np.array([token_to_id(word) for word in sentence])
     
 '''
 Load dataset (i.e. dev, test, verification)
