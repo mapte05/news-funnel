@@ -69,7 +69,12 @@ def load_data(data_path, article_file, title_file):
 
 def preprocess_data(articles, summaries, token_to_id, article_length, summary_length):
     summaries = np.array([[token_to_id(word) for word in sentence] for sentence in summaries], ndmin=summary_length)
+    if summaries.shape[1] >= summary_length:
+        summaries = summaries[:, 0:summary_length]
+    
     articles = np.array([[token_to_id(word) for word in sentence] for sentence in articles], ndmin=article_length)
+    if articles.shape[1] >= article_length:
+        articles = articles[:, 0:article_length]
     return articles, summaries
     
 
