@@ -2,7 +2,7 @@
 correct use
 
 training: python model.py train
-testing: python model.py test
+testing: python model.py test param_file
 
 '''
 import tensorflow as tf
@@ -34,6 +34,7 @@ class Config(object):
     beam_size = 5
     start_token = None # set during preprocessing
 
+    saver_path = 'variables/news-funnel-model'
     train_article_file = './data/train/valid.article.filter.txt' # TODO: replace at actual training time with 'train/train.article.txt'
     train_title_file = './data/train/valid.title.filter.txt' # TODO: replace at actual training time with 'train/train.title.txt'
     dev_article_file = './data/train/valid.article.filter.txt'
@@ -226,7 +227,7 @@ def train_main(config_file="config/config_file", debug=False, run_dev=False):
                 while True:
                     counter += 1
                     if counter % 1000 == 0:
-                        saver.save(sess, 'variables/news-funnel-model', global_step=counter)
+                        saver.save(sess, config.saver_path, global_step=counter)
                     loss, _ = sess.run([loss_op, training_op])
                     print "loss:", loss
             except tf.errors.OutOfRangeError:
@@ -234,8 +235,7 @@ def train_main(config_file="config/config_file", debug=False, run_dev=False):
 
 
 
-def test_main(config_file="config/config_file", param_file, load_config_from_file=True, debug=False):
-
+def test_main(param_file, config_file="config/config_file", load_config_from_file=True, debug=False):
     config = None
     if load_config_from_file:
         config = load_config(config_file)
@@ -255,14 +255,16 @@ def test_main(config_file="config/config_file", param_file, load_config_from_fil
     test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
-    model = RushModel(param_file=param_file)
+    model = RushModel()
     article_batch = tf.train.batch([test_articles],
         batch_size=config.batch_size,
         num_threads=1, 
         enqueue_many=True,
         allow_smaller_final_batch=True)
-    
+
+    saver = tf.train.Saver()
     with tf.Session() as sess:
+        saver.restore(sess, param_file)
         tf.train.start_queue_runners(sess=sess)
         try:
             while True:
@@ -272,11 +274,13 @@ def test_main(config_file="config/config_file", param_file, load_config_from_fil
         except tf.errors.OutOfRangeError:
             pass
 
+
+
 if __name__ == '__main__':
-    assert(len(args) == 2)
+    assert(len(args) == 2 or len(args) == 3)
     if args[1] == "train":
-        train_main(args[2])
+        train_main()
     elif args[1] == "test":
-        test_main(args[2], arg[3])
+        test_main(arg[2])
     else:
         print "please specify your model: \"train\" or \"test\""
