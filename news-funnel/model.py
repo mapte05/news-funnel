@@ -55,8 +55,6 @@ class RushModel(Model):
         self.summaries_placeholder = tf.placeholder(tf.int32, [None, self.config.summary_length])
         # self.dropout_placeholder = tf.placeholder(tf.float32, shape=())
 
-
-
     def create_feed_dict(self, inputs_batch, summaries_batch=None):
         """
 
@@ -78,23 +76,6 @@ class RushModel(Model):
         if summaries_batch is not None:
             feed_dict[self.summaries_placeholder] = summaries_batch
         return feed_dict
-
-    def add_prediction_op(self):
-        """
-        Returns:
-            pred: tf.Tensor of shape (batch_size, n_classes)
-        """
-
-        logits = []
-        summary = []
-        for i in range(self.config.summary_length):
-        	context = ([start_token]*self.config.context_size + summary)[-self.config.context_size:]
-            
-            logits.append(pred)
-        	summary.append(tf.argmax(pred, axis=1))
-        
-        self.logits = tf.stack(logits, axis=1)
-        self.summary = summary
     
     def do_prediction_step(input, context):
         xavier_init = tf.contrib.layers.xavier_initializer()
@@ -127,15 +108,15 @@ class RushModel(Model):
         if method == "ATT":
             raise NotImplementedError
 
-    def add_loss_op(self):
+    def add_loss_op(self, articles, summaries):
         logits = []
-        padded_context = tf.stack(tf.tile(self.config.start_token, [self.config.context_size]), self.summaries_placeholder)
+        padded_context = tf.stack(tf.tile(self.config.start_token, [self.config.context_size]), summaries)
         for i in range(self.config.summary_length):
             context = tf.slice(padded_context, i, self.config.context_size)
-            logits.append(do_prediction_step(self.input_placeholder, context))
+            logits.append(do_prediction_step(articles, context))
         logits = tf.stack(logits, axis=1)
     
-        self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.logits, labels=self.summaries_placeholder))
+        return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries))
         
     def predict(self):
         padded_predictions = tf.tile(self.config.start_token, [self.config.batch_size, self.config.context_size])
@@ -157,9 +138,6 @@ class RushModel(Model):
             padded_predictions = tf.stack()
             prediction_logits = 
         """
-        
-        
-
 
     def add_training_op(self, loss):
         """Sets up the training Ops.
@@ -168,14 +146,39 @@ class RushModel(Model):
         Returns:
             train_op: The Op for training.
         """
-        train_op = tf.train.AdamOptimizer(learning_rate=self.config.lr).minimize(loss)
-        return train_op
+        return tf.train.AdamOptimizer(learning_rate=self.config.lr).minimize(loss)
 
+    def get_training_batch(self, articles, summaries):
+        return tf.train.shuffle_batch([articles, summaries], 
+            batch_size=self.config.batch_size,
+            num_threads=1,
+            capacity=50000,
+            min_after_dequeue=10000,
+            enqueue_many=True)
+
+    def train(self, articles, summaries, epoch_limit):
+        #epochs = tf.Variable(0)
+        #tf.count_up_to(epochs, epoch_limit)
+    
+        article_batch, sumary_batch = get_training_batch(self, articles, summaries)
+        loss_op = self.add_loss_op(article_batch, sumary_batch)
+        training_op = self.add_training_op(loss_op)
+    
+        init = tf.global_variables_initializer()
+        with tf.Session() as sess:
+            sess.run(init)
+            tf.train.start_queue_runners(sess=sess)
+            while True:
+                loss, _ = sess.run([loss, training_op])
+                print loss
+                
 
 	def __init__(self, word2vec_embeddings):
 		self.word2vec_embeddings = word2vec_embeddings
         self.config = config
-        self.build()
+        
+        self.add_placeholders()
+        
 
 
 def writeConfig(config, config_file):
