@@ -65,8 +65,8 @@ def preprocess_data(articles, token_to_id, article_length):
     articles = np.array([[token_to_id(word) for word in sentence] for sentence in articles])
     if articles.shape[1] > article_length:
         articles = articles[:, 0:article_length]
-    if articles.shape[1] < article_length:
-        articles = np.pad(articles, ((0, 0), (0, article_length - articles.shape[1]), mode='constant', constant_values=0)
+    elif articles.shape[1] < article_length:
+        articles = np.pad(articles, ((0, 0), (0, article_length - articles.shape[1])), mode='constant', constant_values=0)
     return articles
     
 
