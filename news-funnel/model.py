@@ -9,6 +9,7 @@ import tensorflow as tf
 import numpy as np
 import time
 import pickle
+import sys
 
 
 class Config(object):
@@ -31,7 +32,7 @@ class Config(object):
     lr = 0.05 # taken from Rush
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
-    start_token = 0 # Use a rare word as the start token
+    start_token = None # set during preprocessing
 
     data_path = './data'
     train_article_file = 'train/valid.article.filter.txt' # TODO: replace at actual training time with 'train/train.article.txt'
@@ -41,8 +42,7 @@ class Config(object):
     test_article_file = 'giga/input.txt' # also need to test on duc2003/duc2004
     test_title_file = 'giga/task1_ref0.txt'
     embedding_file = 'glove.6B.50d.txt' #TODO: replace with 'glove.6B.200d.txt
-
-
+    
 
 class RushModel:
 
@@ -115,11 +115,11 @@ class RushModel:
     
         return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries))
         
-    def predict(self):
+    def predict(self, articles):
         padded_predictions = tf.tile(self.config.start_token, [self.config.batch_size, self.config.context_size])
         for i in range(self.config.summary_length):
             contexts = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
-            logits = do_prediction_step(self.input_placeholder, contexts)
+            logits = do_prediction_step(articles, contexts)
             padded_predictions = tf.stack([padded_predictions, tf.nn.arg_max(logits)], axis=-1)
         return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
         
@@ -129,7 +129,7 @@ class RushModel:
         prediction_logits = tf.tile(0, [self.config.beam_size, self.config.batch_size, 1])
         for i in range(self.config.summary_length):
             contexts = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
-            logits = tf.nn.log_softmax(logits=do_prediction_step(self.input_placeholder, contexts))
+            logits = tf.nn.log_softmax(logits=do_prediction_step(articles, contexts))
         
             logits_beam, indices_beam = tf.nn.top_k(input=logits, k=self.config.beam_size)
             padded_predictions = tf.stack()
@@ -198,6 +198,7 @@ def train_main(config_file, debug=False, run_dev=False):
     start = time.time()
     embeddings, token_to_id, id_to_token = load_embeddings(config.data_path, config.embedding_file)
     config.vocab_size = len(embeddings)
+    config.start_token = token_to_id('<START>')
     print "took {:.2f} seconds".format(time.time() - start)
 
     print "Loading training data...",
@@ -220,7 +221,7 @@ def train_main(config_file, debug=False, run_dev=False):
 
 
 
-def test_main(config_file, load_config_from_file=True, debug=False):
+def test_main(config_file, param_file, load_config_from_file=True, debug=False):
 
     config = None
     if load_config_from_file:
@@ -228,18 +229,41 @@ def test_main(config_file, load_config_from_file=True, debug=False):
     else:
         config = Config()
 
-    print "Loading test data...",
+    print >> sys.stderr, "Loading embedding data...",
     start = time.time()
-    test_articles, test_summaries = load_data(config.data_path, config.test_article_file, config.test_title_file)
-    test_articles, test_summaries = preprocess_data(test_articles, test_summaries, token_to_id, article_length, summary_length)
-    print "took {:.2f} seconds".format(time.time() - start)
+    embeddings, token_to_id, id_to_token = load_embeddings(config.data_path, config.embedding_file)
+    assert len(embeddings) == config.vocab_size
+    print >> sys.stderr,  "took {:.2f} seconds".format(time.time() - start)
 
+    print >> sys.stderr, "Loading test data...",
+    start = time.time()
+    # TODO: break up load_data and preprocess_data
+    test_articles, test_summaries = load_data(config.data_path, config.test_article_file, config.test_title_file)
+    test_articles, test_summaries = preprocess_data(test_articles, test_summaries, token_to_id, config.article_length, config.summary_length)
+    print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
+    
+    model = RushModel(param_file=param_file)
+    article_batch = tf.train.batch([test_articles],
+        batch_size=config.batch_size,
+        num_threads=1, 
+        enqueue_many=True,
+        allow_smaller_final_batch=True)
+    
+    with tf.Session() as sess:
+        tf.train.start_queue_runners(sess=sess)
+        try:
+            while True:
+                summaries = sess.run([model.predict(article_batch)])
+                for summary in summaries:
+                    print ' '.join(id_to_token(id) for id in summary)
+        except tf.errors.OutOfRangeError:
+            pass
 
 if __name__ == '__main__':
     assert(len(args) == 3) # third argument is path to config file
     if args[1] == "train":
         train_main(args[2])
     elif args[1] == "test":
-        test_main(args[2])
+        test_main(args[2], arg[3])
     else:
         print "please specify your model: \"train\" or \"test\""
