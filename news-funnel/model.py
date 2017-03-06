@@ -207,7 +207,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
         batch_size=config.batch_size,
         num_threads=1,
         capacity=50000,
-        min_after_dequeue=10000,
+        min_after_dequeue=10,   # TODO make bigger during real stuff
         enqueue_many=True)
     loss_op = model.add_loss_op(article_batch, summary_batch)
     training_op = model.add_training_op(loss_op)
