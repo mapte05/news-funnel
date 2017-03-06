@@ -50,6 +50,7 @@ class RushModel:
     def __init__(self, word2vec_embeddings, config):
         self.word2vec_embeddings = word2vec_embeddings
         self.config = config
+        self.defined = False
 
     def add_placeholders(self):
         self.input_placeholder = tf.placeholder(tf.int32, [None, self.config.article_length])
@@ -83,7 +84,7 @@ class RushModel:
         zero_init = tf.constant_initializer(0.0)
         embed_init = self.word2vec_embeddings
 
-        with tf.variable_scope("prediction_step"):
+        with tf.variable_scope("prediction_step", reuse=self.defined):
             output_embeddings = tf.get_variable("E", initializer=embed_init)
             input_embeddings = tf.get_variable("F", initializer=embed_init)
             encoding_embeddings = tf.get_variable("G", initializer=embed_init)
@@ -98,6 +99,7 @@ class RushModel:
             V = tf.get_variable("V",  shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
             W = tf.get_variable("W", shape=(self.config.embed_size, self.config.vocab_size), initializer=xavier_init) # TODO: Might need tweaking depend on encoding method
             b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=zero_init)
+            self.defined = True
 
             h = tf.tanh(tf.matmul(embedded_context, U) + b1)
             encoded = self.encode(embedded_input, embedded_context_for_encoding)
