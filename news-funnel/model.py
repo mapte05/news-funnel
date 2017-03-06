@@ -204,7 +204,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
 
     model = RushModel()
     article_batch, summary_batch =  tf.train.shuffle_batch([train_articles, train_summaries], 
-        batch_size=self.config.batch_size,
+        batch_size=config.batch_size,
         num_threads=1,
         capacity=50000,
         min_after_dequeue=10000,
