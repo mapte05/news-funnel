@@ -96,9 +96,9 @@ class RushModel:
             b1 = tf.get_variable("b1", shape=(1, self.config.hidden_size), initializer=zero_init)
             
             V = tf.get_variable("V",  shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
-            W = tf.get_variable("W", shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
+            W = tf.get_variable("W", shape=(self.config.embed_size, self.config.vocab_size), initializer=xavier_init) # TODO: Might need tweaking depend on encoding method
             b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=zero_init)
-            
+
             h = tf.tanh(tf.matmul(embedded_context, U) + b1)
             encoded = self.encode(embedded_input, embedded_context_for_encoding)
             logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
@@ -107,7 +107,7 @@ class RushModel:
 
     def encode(self, embedded_input, embedded_context, method="BOW"):
         if method == "BOW":
-            return tf.reduce_mean(embedded_input, axis=1)
+            return tf.reduce_mean(embedded_input, axis=2)
         if method == "ATT":
             raise NotImplementedError
 
