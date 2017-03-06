@@ -163,15 +163,6 @@ def load_config(config_file):
     return config
 
 
-def get_training_batch(articles, summaries):
-        return tf.train.shuffle_batch([articles, summaries], 
-            batch_size=self.config.batch_size,
-            num_threads=1,
-            capacity=50000,
-            min_after_dequeue=10000,
-            enqueue_many=True)
-
-
 def train_main(config_file="config/config_file", debug=False, run_dev=False):
     print 80 * "="
     print "INITIALIZING"
@@ -212,7 +203,12 @@ def train_main(config_file="config/config_file", debug=False, run_dev=False):
     write_config(config, config_file)
 
     model = RushModel()
-    article_batch, summary_batch = model.get_training_batch(train_articles, train_summaries)
+    article_batch, summary_batch =  tf.train.shuffle_batch([train_articles, train_summaries], 
+        batch_size=self.config.batch_size,
+        num_threads=1,
+        capacity=50000,
+        min_after_dequeue=10000,
+        enqueue_many=True)
     loss_op = model.add_loss_op(article_batch, summary_batch)
     training_op = model.add_training_op(loss_op)
             
