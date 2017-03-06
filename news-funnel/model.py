@@ -89,8 +89,8 @@ class RushModel:
             encoding_embeddings = tf.get_variable("G", initializer=embed_init)
             
             embedded_input = tf.nn.embedding_lookup(ids=input, params=input_embeddings)
-            embedded_context = tf.reshape(tf.nn.embedding_lookup(ids=context, params=self.output_embeddings), (-1, self.config.context_size*self.config.embed_size))
-            embedded_context_for_encoding = tf.reshape(tf.nn.embedding_lookup(ids=context, params=self.encoding_embeddings), (-1, self.config.context_size*self.config.embed_size))
+            embedded_context = tf.reshape(tf.nn.embedding_lookup(ids=context, params=output_embeddings), (-1, self.config.context_size*self.config.embed_size))
+            embedded_context_for_encoding = tf.reshape(tf.nn.embedding_lookup(ids=context, params=encoding_embeddings), (-1, self.config.context_size*self.config.embed_size))
             
             U = tf.get_variable("U", shape=(self.config.context_size*self.config.embed_size, self.config.hidden_size), initializer=xavier_init)
             b1 = tf.get_variable("b1", shape=(1, self.config.hidden_size), initializer=zero_init)
