@@ -107,7 +107,7 @@ class RushModel:
 
     def encode(self, embedded_input, embedded_context, method="BOW"):
         if method == "BOW":
-            return tf.reduce_mean(embedded_input, axis=2)
+            return tf.reduce_mean(embedded_input, axis=-2) # average along input
         if method == "ATT":
             raise NotImplementedError
 
@@ -175,6 +175,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     start = time.time()
     embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, debug=debug)
     config.vocab_size = embeddings.shape[0]
+    config.embed_size = embeddings.shape[1]
     config.start_token = token_to_id('<START>')
     print "loaded {0} embeddings".format(config.vocab_size)
     print "took {:.2f} seconds".format(time.time() - start)
