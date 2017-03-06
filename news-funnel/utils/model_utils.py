@@ -51,7 +51,7 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower(), debug
             break
         
     token_to_id_fn = lambda token: token_to_id[normalize(token)] if normalize(token) in token_to_id else token_to_id['<UNKNOWN>']
-    return np.array(embeddings), token_to_id_fn, id_to_token
+    return np.array(embeddings, dtype=np.int32), token_to_id_fn, id_to_token
 
     
 '''
@@ -68,7 +68,10 @@ def load_data(article_file, debug=False):
     return articles
 
 def preprocess_data(articles, token_to_id, article_length):
-    articles = np.array([np.pad([token_to_id(word) for word in article], (0, article_length), mode='constant', constant_values=0)[0:article_length] for article in articles], ndmin=2)
+    articles = np.array(
+        [np.pad([token_to_id(word) for word in article], (0, article_length), mode='constant', constant_values=0)[0:article_length] for article in articles], 
+        ndmin=2,
+        dtype=np.int32)
     return articles
 
 

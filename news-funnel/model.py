@@ -112,7 +112,10 @@ class RushModel:
 
     def add_loss_op(self, articles, summaries):
         logits = []
-        padded_context = tf.stack(tf.tile([self.config.start_token], [self.config.context_size]), summaries)
+        padded_context = tf.concat([
+            tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token), 
+            summaries
+        ], 1)
         for i in range(self.config.summary_length):
             context = tf.slice(padded_context, i, self.config.context_size)
             logits.append(do_prediction_step(articles, context))
