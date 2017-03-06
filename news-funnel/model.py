@@ -78,14 +78,15 @@ class RushModel:
             feed_dict[self.summaries_placeholder] = summaries_batch
         return feed_dict
     
-    def do_prediction_step(input, context):
+    def do_prediction_step(self, input, context):
         xavier_init = tf.contrib.layers.xavier_initializer()
-        zero_init = tf.zeros_initializer()
+        zero_init = tf.constant_initializer(0.0)
+        embed_init = self.word2vec_embeddings
 
-        with tf.variable_scope("prediction_step", reuse=True):
-            output_embeddings = tf.get_variable("E", self.word2vec_embeddings)
-            input_embeddings = tf.get_variable("F", self.word2vec_embeddings)
-            encoding_embeddings = tf.get_variable("G", self.word2vec_embeddings)
+        with tf.variable_scope("prediction_step"):
+            output_embeddings = tf.get_variable("E", initializer=embed_init)
+            input_embeddings = tf.get_variable("F", initializer=embed_init)
+            encoding_embeddings = tf.get_variable("G", initializer=embed_init)
             
             embedded_input = tf.nn.embedding_lookup(ids=input, params=input_embeddings)
             embedded_context = tf.reshape(tf.nn.embedding_lookup(ids=context, params=self.output_embeddings), (-1, self.config.context_size*self.config.embed_size))
@@ -112,13 +113,12 @@ class RushModel:
 
     def add_loss_op(self, articles, summaries):
         logits = []
-        padded_context = tf.concat([
+        padded_context = tf.concat_v2([
             tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token), 
-            summaries
-        ], 1)
+            summaries], 1)
         for i in range(self.config.summary_length):
-            context = tf.slice(padded_context, i, self.config.context_size)
-            logits.append(do_prediction_step(articles, context))
+            context = tf.slice(padded_context, [0, i], [-1, self.config.context_size])
+            logits.append(self.do_prediction_step(articles, context))
         logits = tf.stack(logits, axis=1)
     
         return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries))
@@ -127,7 +127,7 @@ class RushModel:
         padded_predictions = tf.tile(self.config.start_token, [self.config.batch_size, self.config.context_size])
         for i in range(self.config.summary_length):
             contexts = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
-            logits = do_prediction_step(articles, contexts)
+            logits = self.do_prediction_step(articles, contexts)
             padded_predictions = tf.stack([padded_predictions, tf.nn.arg_max(logits)], axis=-1)
         return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
         
