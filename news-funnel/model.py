@@ -163,7 +163,7 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file="config/config_file", debug=False, run_dev=False):
+def train_main(config_file="config/config_file", debug=True, run_dev=False):
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
@@ -171,7 +171,7 @@ def train_main(config_file="config/config_file", debug=False, run_dev=False):
 
     print "Loading embedding data...",
     start = time.time()
-    embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file)
+    embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, debug=debug)
     config.vocab_size = len(embeddings)
     config.start_token = token_to_id('<START>')
     print "loaded {0} embeddings".format(config.vocab_size)
@@ -179,11 +179,11 @@ def train_main(config_file="config/config_file", debug=False, run_dev=False):
 
     print "Loading training data...",
     start = time.time()
-    train_articles = load_data(config.train_article_file)
+    train_articles = load_data(config.train_article_file, debug=debug)
     config.article_length = article_length = max([len(x) for x in train_articles])
     train_articles = preprocess_data(train_articles, token_to_id, article_length)
     
-    train_summaries = load_data(config.train_title_file)
+    train_summaries = load_data(config.train_title_file, debug=debug)
     config.summary_length = summary_length = max([len(x) for x in train_summaries])
     train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
     print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])

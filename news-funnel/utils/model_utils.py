@@ -21,7 +21,7 @@ def minibatches(data, batch_size):
 '''
 load word embeddings
 '''
-def load_embeddings(embedding_file, normalize=lambda token: token.lower()):
+def load_embeddings(embedding_file, normalize=lambda token: token.lower(), debug=False):
     embedding_dimension = None
     for line in open(embedding_file).readlines():
         embedding_dimension = len(line.strip().split()) - 1
@@ -47,6 +47,9 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower()):
         id_to_token.append(sp[0])
         embeddings.append(np.array([float(x) for x in sp[1:]]))
         
+        if debug and len(embeddings) >= 10000:
+            break
+        
     token_to_id_fn = lambda token: token_to_id[normalize(token)] if normalize(token) in token_to_id else token_to_id['<UNKNOWN>']
     return embeddings, token_to_id_fn, id_to_token
 
@@ -54,11 +57,14 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower()):
 '''
 Load dataset (i.e. dev, test, verification)
 '''
-def load_data(article_file):
+def load_data(article_file, debug=False):
     articles = []
     with open(article_file) as af:
         for article in af.readlines():
             articles.append(article.split())
+            
+            if debug and len(articles) >= 1000:
+                break
     return articles
 
 def preprocess_data(articles, token_to_id, article_length):
