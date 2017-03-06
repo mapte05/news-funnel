@@ -212,6 +212,10 @@ def train_main(config_file="config/config_file", debug=False, run_dev=False):
     write_config(config, config_file)
 
     model = RushModel()
+    article_batch, summary_batch = model.get_training_batch(train_articles, train_summaries)
+    loss_op = model.add_loss_op(article_batch, summary_batch)
+    training_op = model.add_training_op(loss_op)
+            
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
     with tf.Session() as sess:
@@ -222,9 +226,6 @@ def train_main(config_file="config/config_file", debug=False, run_dev=False):
         print "TRAINING"
         print 80 * "="
         for epoch in range(config.n_epochs):
-            article_batch, summary_batch = model.get_training_batch(train_articles, train_summaries)
-            loss_op = model.add_loss_op(article_batch, summary_batch)
-            training_op = model.add_training_op(loss_op)
             tf.train.start_queue_runners(sess=sess)
             try:
                 while True:
