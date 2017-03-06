@@ -171,7 +171,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     print "Loading embedding data...",
     start = time.time()
     embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, debug=debug)
-    config.vocab_size = len(embeddings)
+    config.vocab_size = embeddings.shape[0]
     config.start_token = token_to_id('<START>')
     print "loaded {0} embeddings".format(config.vocab_size)
     print "took {:.2f} seconds".format(time.time() - start)
@@ -206,7 +206,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
         batch_size=config.batch_size,
         num_threads=1,
         capacity=50000,
-        min_after_dequeue=10000,
+        min_after_dequeue=10,   # TODO make bigger during real stuff
         enqueue_many=True)
     loss_op = model.add_loss_op(article_batch, summary_batch)
     training_op = model.add_training_op(loss_op)

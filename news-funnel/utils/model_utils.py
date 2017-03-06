@@ -51,7 +51,7 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower(), debug
             break
         
     token_to_id_fn = lambda token: token_to_id[normalize(token)] if normalize(token) in token_to_id else token_to_id['<UNKNOWN>']
-    return embeddings, token_to_id_fn, id_to_token
+    return np.array(embeddings), token_to_id_fn, id_to_token
 
     
 '''
