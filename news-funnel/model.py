@@ -47,6 +47,10 @@ class Config(object):
 
 class RushModel:
 
+    def __init__(self, word2vec_embeddings, config):
+        self.word2vec_embeddings = word2vec_embeddings
+        self.config = config
+
     def add_placeholders(self):
         self.input_placeholder = tf.placeholder(tf.int32, [None, self.config.article_length])
         self.summaries_placeholder = tf.placeholder(tf.int32, [None, self.config.summary_length])
@@ -145,11 +149,6 @@ class RushModel:
             train_op: The Op for training.
         """
         return tf.train.AdamOptimizer(learning_rate=self.config.lr).minimize(loss)
-                
-
-	def __init__(self, word2vec_embeddings):
-		self.word2vec_embeddings = word2vec_embeddings
-        self.config = config
         
 
 
@@ -202,7 +201,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     print "writing Config to file"
     write_config(config, config_file)
 
-    model = RushModel()
+    model = RushModel(embeddings, config)
     article_batch, summary_batch =  tf.train.shuffle_batch([train_articles, train_summaries], 
         batch_size=config.batch_size,
         num_threads=1,
@@ -255,7 +254,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
     test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
-    model = RushModel()
+    model = RushModel(embeddings, config)
     article_batch = tf.train.batch([test_articles],
         batch_size=config.batch_size,
         num_threads=1, 
