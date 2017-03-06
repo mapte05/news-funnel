@@ -183,6 +183,7 @@ def train_main(config_file="config/config_file", debug=False, run_dev=False):
     embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file)
     config.vocab_size = len(embeddings)
     config.start_token = token_to_id('<START>')
+    print "loaded {0} embeddings".format(config.vocab_size)
     print "took {:.2f} seconds".format(time.time() - start)
 
     print "Loading training data...",
@@ -194,6 +195,7 @@ def train_main(config_file="config/config_file", debug=False, run_dev=False):
     train_summaries = load_data(config.train_title_file)
     config.summary_length = summary_length = max([len(x) for x in train_summaries])
     train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
+    print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
     print "took {:.2f} seconds".format(time.time() - start)
 
     if run_dev:
