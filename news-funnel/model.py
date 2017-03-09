@@ -102,6 +102,14 @@ class RushModel:
             V = tf.get_variable("V",  shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
             W = tf.get_variable("W", shape=(self.config.embed_size, self.config.vocab_size), initializer=xavier_init) # TODO: Might need tweaking depend on encoding method
             b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=zero_init)
+
+            tf.add_to_collection('vars', U)
+            tf.add_to_collection('vars', b1)
+            tf.add_to_collection('vars', V)
+            tf.add_to_collection('vars', W)
+            tf.add_to_collection('vars', b2)
+
+
             self.defined = True
 
             h = tf.tanh(tf.matmul(embedded_context, U) + b1)
@@ -187,7 +195,7 @@ class RushModel:
             train_op: The Op for training.
         """
         global_step = tf.Variable(0, trainable=False)
-        # tf.add_to_collection('vars', global_step)
+        tf.add_to_collection('vars', global_step)
         learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
         return tf.train.AdamOptimizer(learning_rate=self.config.lr).minimize(loss, global_step=global_step)
         
