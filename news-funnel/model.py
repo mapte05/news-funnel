@@ -297,7 +297,10 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
-        saver.restore(sess, config.saver_path)
+        new_saver = tf.train.import_meta_graph(param_file)
+        new_saver.restore(sess, tf.train.latest_checkpoint('./'))
+        all_vars = tf.get_collection('vars')
+        # saver.restore(sess, config.saver_path)
         print 80 * "="
         print "TRAINING"
         print 80 * "="
