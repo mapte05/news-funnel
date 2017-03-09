@@ -79,7 +79,7 @@ def load_data(article_file, debug=False):
 
 def preprocess_data(articles, token_to_id, article_length):
     articles = np.array(
-        [np.pad([token_to_id(word) for word in article], (0, article_length), mode='constant', constant_values=token_to_id['<E>'])[0:article_length] for article in articles], 
+        [np.pad([token_to_id(word) for word in article], (0, article_length), mode='constant', constant_values=token_to_id('<E>'))[0:article_length] for article in articles], 
         ndmin=2,
         dtype=np.int32)
     return articles
