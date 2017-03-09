@@ -30,7 +30,7 @@ class Config(object):
     batch_size = 64 # taken from Rush
     n_epochs = 15 # taken from Rush
     n_layers = 3 # taken from Rush (L)
-    lr = 0.05 # taken from Rush
+    lr = 0.005 # Rush uses .05
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
     start_token = None # set during preprocessing
