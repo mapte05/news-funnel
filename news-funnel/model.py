@@ -103,11 +103,11 @@ class RushModel:
             W = tf.get_variable("W", shape=(self.config.embed_size, self.config.vocab_size), initializer=xavier_init) # TODO: Might need tweaking depend on encoding method
             b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=zero_init)
 
-            tf.add_to_collection('vars', U)
-            tf.add_to_collection('vars', b1)
-            tf.add_to_collection('vars', V)
-            tf.add_to_collection('vars', W)
-            tf.add_to_collection('vars', b2)
+            # tf.add_to_collection('vars', U)
+            # tf.add_to_collection('vars', b1)
+            # tf.add_to_collection('vars', V)
+            # tf.add_to_collection('vars', W)
+            # tf.add_to_collection('vars', b2)
 
 
             self.defined = True
@@ -195,7 +195,7 @@ class RushModel:
             train_op: The Op for training.
         """
         global_step = tf.Variable(0, trainable=False)
-        tf.add_to_collection('vars', global_step)
+        # tf.add_to_collection('vars', global_step)
         learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
         return tf.train.AdamOptimizer(learning_rate=self.config.lr).minimize(loss, global_step=global_step)
         
@@ -277,8 +277,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
                     counter += 1
                     if counter % 50 == 0:
                         print "SAVED PARAMETERS"
-                        saver.save(sess, 'news-funnel')
-                        # saver.save(sess, config.saver_path, global_step=counter)
+                        # saver.save(sess, 'news-funnel')
+                        saver.save(sess, config.saver_path, global_step=counter)
                     loss, _ = sess.run([loss_op, training_op])
                     print "loss:", loss, "| counter:", counter
             except tf.errors.OutOfRangeError:
@@ -317,12 +317,12 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
         allow_smaller_final_batch=True)
     predictions = model.predict(article_batch)
 
-    # saver = tf.train.Saver()
+    saver = tf.train.Saver()
     with tf.Session() as sess:
-        new_saver = tf.train.import_meta_graph(param_file)
-        new_saver.restore(sess, tf.train.latest_checkpoint('./'))
-        all_vars = tf.get_collection('vars')
-        # saver.restore(sess, config.saver_path)
+        # new_saver = tf.train.import_meta_graph(param_file)
+        # new_saver.restore(sess, tf.train.latest_checkpoint('./'))
+        # all_vars = tf.get_collection('vars')
+        saver.restore(sess, config.saver_path)
         print 80 * "="
         print "TRAINING"
         print 80 * "="
