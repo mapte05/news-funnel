@@ -343,8 +343,8 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
     article_batch = tf.train.batch([test_articles],
         batch_size=config.batch_size,
         num_threads=1, 
-        enqueue_many=True,
-        allow_smaller_final_batch=True)
+        enqueue_many=True)
+        #allow_smaller_final_batch=True)
     predictions = model.predict(article_batch)
 
     saver = tf.train.Saver()
