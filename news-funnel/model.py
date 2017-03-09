@@ -249,7 +249,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
             try:
                 while True:
                     counter += 1
-                    if counter % 1000 == 0:
+                    if counter % 50 == 0:
                         print "SAVED PARAMETERS"
                         saver.save(sess, config.saver_path, global_step=counter)
                     loss, _ = sess.run([loss_op, training_op])
@@ -271,14 +271,14 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 
     print >> sys.stderr, "Loading embedding data...",
     start = time.time()
-    embeddings, token_to_id, id_to_token = load_embeddings(config.data_path, config.embedding_file)
+    embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, debug=debug)
     assert len(embeddings) == config.vocab_size
     print >> sys.stderr,  "took {:.2f} seconds".format(time.time() - start)
 
     print >> sys.stderr, "Loading test data...",
     start = time.time()
     
-    test_articles = load_data(config.test_article_file)
+    test_articles = load_data(config.test_article_file, debug=debug)
     test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
@@ -316,6 +316,6 @@ if __name__ == '__main__':
     elif sys.argv[1] == "test":
         if len(sys.argv) > 2 and sys.argv[3] == 'debug':
             debug = True
-        test_main(arg[2], debug=debug)
+        test_main(sys.argv[2], debug=debug)
     else:
         print "please specify your model: \"train\" or \"test\""
