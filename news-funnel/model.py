@@ -276,8 +276,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     write_config(config, config_file)
 
     model = RushModel(embeddings, config)
-    print "train articles shape", train_articles.get_shape()
-    print "train summaries shape", train_summaries.get_shape()
+    print "train articles shape", train_articles.shape
+    print "train summaries shape", train_summaries.shape
     article_batch, summary_batch =  tf.train.shuffle_batch([train_articles, train_summaries], 
         batch_size=config.batch_size,
         num_threads=1,
