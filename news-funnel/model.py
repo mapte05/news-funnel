@@ -25,7 +25,7 @@ class Config(object):
     context_size = 5 # taken from Rush (C)
     summary_length = None # set during preprocessing
     article_length = None # set during preprocessing
-    embed_size = None # set during preprocessing (Rush: D = 200)
+    embed_size = 200 # taken from Rush (D)
     hidden_size = 400 # taken from Rush (H)
     batch_size = 64 # taken from Rush
     n_epochs = 15 # taken from Rush
@@ -36,10 +36,6 @@ class Config(object):
     lr_staircase = False
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
-    optimizer = tf.train.AdamOptimizer
-    
-    max_vocab = 100000 # Nallapati 150k
-    max_train_articles = None
     
     start_token = None # set during preprocessing
     end_token = None # set during preprocessing
@@ -205,7 +201,7 @@ class RushModel:
         global_step = tf.Variable(0, trainable=False)
         # tf.add_to_collection('vars', global_step)
         learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
-        return config.optimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
+        return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
         
 
 
@@ -227,7 +223,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
 
     print "Loading embedding data...",
     start = time.time()
-    embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, config.max_vocab)
+    embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, debug=debug)
     config.vocab_size = embeddings.shape[0]
     config.embed_size = embeddings.shape[1]
     config.start_token = token_to_id('<s>')
@@ -237,11 +233,11 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
 
     print "Loading training data...",
     start = time.time()
-    train_articles = load_data(config.train_article_file, config.max_train_articles)
+    train_articles = load_data(config.train_article_file, debug=debug)
     config.article_length = article_length = max([len(x) for x in train_articles])
     train_articles = preprocess_data(train_articles, token_to_id, article_length)
     
-    train_summaries = load_data(config.train_title_file)
+    train_summaries = load_data(config.train_title_file, debug=debug)
     config.summary_length = summary_length = max([len(x) for x in train_summaries])
     train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
     print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
@@ -307,14 +303,14 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 
     print >> sys.stderr, "Loading embedding data...",
     start = time.time()
-    embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, config.max_vocab)
+    embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, debug=debug)
     assert len(embeddings) == config.vocab_size
     print >> sys.stderr,  "took {:.2f} seconds".format(time.time() - start)
 
     print >> sys.stderr, "Loading test data...",
     start = time.time()
     
-    test_articles = load_data(config.test_article_file)
+    test_articles = load_data(config.test_article_file, debug=debug)
     test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
