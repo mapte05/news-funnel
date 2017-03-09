@@ -30,7 +30,10 @@ class Config(object):
     batch_size = 64 # taken from Rush
     n_epochs = 15 # taken from Rush
     n_layers = 3 # taken from Rush (L)
-    lr = 0.005 # .05 taken from Rush TODO change this when we implement smart learning
+    lr = 0.05 # taken from Rush
+    lr_decay_base = .5 # taken from Rush
+    lr_decay_after_steps = 100000
+    lr_staircase = False
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
     start_token = None # set during preprocessing
@@ -171,7 +174,9 @@ class RushModel:
         Returns:
             train_op: The Op for training.
         """
-        return tf.train.AdamOptimizer(learning_rate=self.config.lr).minimize(loss)
+        global_step = tf.Variable(0, trainable=False)
+        learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
+        return tf.train.AdamOptimizer(learning_rate=self.config.lr).minimize(loss, global_step=global_step)
         
 
 
@@ -291,7 +296,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
-        saver.restore(sess, param_file)
+        saver.restore(sess, config.saver_path)
         print 80 * "="
         print "TRAINING"
         print 80 * "="
