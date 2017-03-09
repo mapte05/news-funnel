@@ -134,7 +134,7 @@ class RushModel:
             for i in range(self.config.summary_length):
                 context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
                 logits = self.do_prediction_step(articles, context)
-                padded_predictions = tf.concat_v2([padded_predictions, tf.to_int32(tf.argmax(logits, axis=1))], 1)
+                padded_predictions = tf.concat_v2([padded_predictions, tf.expand_dims(tf.to_int32(tf.argmax(logits, axis=1)), -1)], 1)
             return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
         """
         elif method == "beam":
@@ -146,9 +146,21 @@ class RushModel:
                 log_probs = prediction_log_probs + tf.nn.log_softmax(logits=do_prediction_step(articles, context)) 
                 assert log_probs.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.vocab_size)
             
-                best_log_probs, best_indices = tf.nn.top_k(input=log_probs, k=self.config.beam_size) 
+                best_log_probs, best_words = tf.nn.top_k(input=log_probs, k=self.config.beam_size) 
+                assert best_log_probs.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.beam_size)
+                assert best_words.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.beam_size)
                 
-                tf.reshape(best_log_probs, (self.batch_size, self.beam_search**2))
+                best_log_probs = tf.reshape(best_log_probs, (self.config.batch_size, self.config.beam_size**2))
+                best_words = tf.reshape(best_words, (self.config.batch_size, self.config.beam_size**2))
+                prediction_log_probs, best_indices = tf.nn.top_k(input=best_log_probs, k=self.config.beam_size) 
+                assert prediction_log_probs.get_shape() == (self.config.batch_size, self.config.beam_size)
+                assert best_indices.get_shape() == (self.config.batch_size, self.config.beam_size)
+                
+                best_beams = tf.mod(best_indices, self.config.beam_size)
+                best_subbeams = tf.truncatediv(best_indices, self.config.beam_size)
+                
+                
+                
                 # dimensions: batch, beam, beam
                 
                 
