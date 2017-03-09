@@ -276,9 +276,9 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
                 while True:
                     counter += 1
                     if counter % 50 == 0:
-                        print "SAVED PARAMETERS"
                         # saver.save(sess, 'news-funnel')
                         saver.save(sess, config.saver_path, global_step=counter)
+                        print "SAVED PARAMETERS"
                     loss, _ = sess.run([loss_op, training_op])
                     print "loss:", loss, "| counter:", counter
             except tf.errors.OutOfRangeError:
