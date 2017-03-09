@@ -8,7 +8,7 @@ import numpy as np
 
 
 NUM_EMBEDDINGS_TO_LOAD = 100000 # used to be 10000
-NUM_ARTICLES_TO_LOAD = 1000 # used to be 1000
+NUM_ARTICLES_TO_LOAD = 100000 # used to be 1000
 
 
 '''
