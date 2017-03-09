@@ -9,7 +9,7 @@ import numpy as np
 
 NUM_EMBEDDINGS_TO_LOAD = 100000 # used to be 10000
 NUM_ARTICLES_TO_LOAD = 100000 # used to be 1000
-NALOPOTY_VOCAB_LIMIT = 150000
+VOCAB_LIMIT = 150000
 
 
 '''
@@ -37,7 +37,7 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower(), debug
     token_to_id = {}
     
     # Special start tokens
-    special_tokens = ['<START>', '<UNKNOWN>']
+    special_tokens = ['<S>', '<U>', '<E>']
     for token in special_tokens:
         token_to_id[token] = len(embeddings)
         id_to_token.append(token)
@@ -57,10 +57,10 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower(), debug
             break
 
         # https://arxiv.org/pdf/1602.06023.pdf - "We limited the source vocabulary size to 150K"
-        if len(embeddings) >= NALOPOTY_VOCAB_LIMIT:
+        if len(embeddings) >= VOCAB_LIMIT:
             break
         
-    token_to_id_fn = lambda token: token_to_id[normalize(token)] if normalize(token) in token_to_id else token_to_id['<UNKNOWN>']
+    token_to_id_fn = lambda token: token_to_id[normalize(token)] if normalize(token) in token_to_id else token_to_id['<U>']
     return np.array(embeddings, dtype=np.float32), token_to_id_fn, id_to_token
 
     
@@ -79,7 +79,7 @@ def load_data(article_file, debug=False):
 
 def preprocess_data(articles, token_to_id, article_length):
     articles = np.array(
-        [np.pad([token_to_id(word) for word in article], (0, article_length), mode='constant', constant_values=0)[0:article_length] for article in articles], 
+        [np.pad([token_to_id(word) for word in article], (0, article_length), mode='constant', constant_values=token_to_id['<E>'])[0:article_length] for article in articles], 
         ndmin=2,
         dtype=np.int32)
     return articles
