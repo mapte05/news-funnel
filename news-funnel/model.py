@@ -213,7 +213,6 @@ class RushModel:
             train_op: The Op for training.
         """
         global_step = tf.Variable(0, trainable=False)
-        # tf.add_to_collection('vars', global_step)
         learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
         return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
         
