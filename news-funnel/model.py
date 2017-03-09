@@ -122,9 +122,9 @@ class RushModel:
                 start_embedding = tf.nn.embedding_lookup(ids=self.config.start_token, params=encoding_embeddings)
                 end_embedding = tf.nn.embedding_lookup(ids=self.config.end_token, params=encoding_embeddings)
                 padded_input = tf.concat_v2([
-                    tf.tile(tf.expand_dims(tf.expand_dims(start_embedding, 0), 0), [self.config.batch_size, self.config.smoothing_window, 1], axis=2),
+                    tf.tile(tf.expand_dims(tf.expand_dims(start_embedding, 0), 0), [self.config.batch_size, self.config.smoothing_window, 1]),
                     input_embeddings,
-                    tf.tile(tf.expand_dims(tf.expand_dims(end_embedding, 0), 0), [self.config.batch_size, self.config.smoothing_window, 1], axis=2)
+                    tf.tile(tf.expand_dims(tf.expand_dims(end_embedding, 0), 0), [self.config.batch_size, self.config.smoothing_window, 1])
                 ], 2)
                 smoothed_input = tf.zeros_like(input_embeddings)
                 for i in xrange(self.config.smoothing_window):
