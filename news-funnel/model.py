@@ -43,6 +43,7 @@ class Config(object):
     
     start_token = None # set during preprocessing
     end_token = None # set during preprocessing
+    null_token = None # set during preprocessing
 
     saver_path = 'variables/news-funnel-model'
     train_article_file = './data/train/valid.article.filter.txt' # TODO: replace at actual training time with 'train/train.article.txt'
@@ -149,9 +150,9 @@ class RushModel:
             logits.append(self.do_prediction_step(articles, context))
         logits = tf.stack(logits, axis=1)
         
-        end_mask = tf.not_equal(summaries, self.config.end_token)
+        null_mask = tf.not_equal(summaries, self.config.null_token)
         cross_entropy_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries)
-        return tf.reduce_sum(tf.boolean_mask(cross_entropy_loss, end_mask))
+        return tf.reduce_sum(tf.boolean_mask(cross_entropy_loss, null_mask))
         
     def predict(self, articles, method="greedy"):
         if method == "greedy":
@@ -241,6 +242,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     config.embed_size = embeddings.shape[1]
     config.start_token = token_to_id('<s>')
     config.end_token = token_to_id('<e>')
+    config.null_token = token_to_id('<null>')
     print "loaded {0} embeddings".format(config.vocab_size)
     print "took {:.2f} seconds".format(time.time() - start)
 
@@ -350,7 +352,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
                 summaries, = sess.run([predictions])
                 for summary in summaries.tolist():
                     for id in summary:
-                        if id_to_token[id] == '<e>':
+                        if id == config.end_token:
                             break
                         print id_to_token[id],
                     print ""

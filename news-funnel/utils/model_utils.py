@@ -32,7 +32,7 @@ def load_embeddings(embedding_file, num_vocab=None, normalize=lambda token: toke
     token_to_id = {}
     
     # Special start tokens
-    special_tokens = ['<s>', '<unk>', '<e>']
+    special_tokens = ['<s>', '<unk>', '<e>', '<null>']
     for token in special_tokens:
         token_to_id[token] = len(embeddings)
         id_to_token.append(token)
@@ -69,11 +69,14 @@ def load_data(article_file, num_articles=None):
     return articles
 
 def preprocess_data(articles, token_to_id, article_length):
-    articles = np.array(
-        [np.pad([token_to_id(word) for word in article], (0, article_length), mode='constant', constant_values=token_to_id('<e>'))[0:article_length] for article in articles], 
-        ndmin=2,
-        dtype=np.int32)
-    return articles
+    processed_articles = []
+    for article in articles:
+        article += ['<e>']
+        if len(article) < article_length:
+            article += ['<null>'] * (article_length - len(article))
+        article = article[0:article_length]
+        processed_articles.append([token_to_id(word) for word in article])
+    return np.array(processed_articles, ndmin=2, dtype=np.int32)
 
 
 if __name__ == '__main__':
