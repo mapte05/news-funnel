@@ -290,9 +290,9 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
 
 
 def test_main(param_file, config_file="config/config_file", load_config_from_file=True, debug=False):
-    print 80 * "="
-    print "INITIALIZING"
-    print 80 * "="
+    print >> sys.stderr,  80 * "="
+    print >> sys.stderr, "INITIALIZING"
+    print >> sys.stderr, 80 * "="
     config = None
     if load_config_from_file:
         config = load_config(config_file)
@@ -326,9 +326,9 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
         # new_saver.restore(sess, tf.train.latest_checkpoint('./'))
         # all_vars = tf.get_collection('vars')
         saver.restore(sess, param_file)
-        print 80 * "="
-        print "TRAINING"
-        print 80 * "="
+        print >> sys.stderr,  80 * "="
+        print >> sys.stderr,  "TESTING"
+        print >> sys.stderr,  80 * "="
         tf.train.start_queue_runners(sess=sess)
         try:
             while True:
@@ -352,4 +352,4 @@ if __name__ == '__main__':
             debug = True
         test_main(sys.argv[2], debug=debug)
     else:
-        print "please specify your model: \"train\" or \"test\""
+        print >> sys.stderr, "please specify your model: \"train\" or \"test\""
