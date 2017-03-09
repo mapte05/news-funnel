@@ -255,7 +255,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     config.article_length = article_length = max([len(x) for x in train_articles]) + 1
     train_articles = preprocess_data(train_articles, token_to_id, article_length)
     
-    train_summaries = load_data(config.train_title_file)
+    train_summaries = load_data(config.train_title_file, config.max_train_articles)
     config.summary_length = summary_length = max([len(x) for x in train_summaries]) + 1
     train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
     print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
