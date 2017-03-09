@@ -9,6 +9,7 @@ import numpy as np
 
 NUM_EMBEDDINGS_TO_LOAD = 10000
 NUM_ARTICLES_TO_LOAD = 1000
+NALOPOTY_VOCAB_LIMIT = 150000
 
 
 '''
@@ -44,6 +45,7 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower(), debug
     
     # load the embeddings from a file
     for line in open(embedding_file).readlines():
+
         sp = line.strip().split()
         sp[0] = normalize(sp[0])
         
@@ -52,6 +54,10 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower(), debug
         embeddings.append(np.array([float(x) for x in sp[1:]]))
         
         if debug and len(embeddings) >= NUM_EMBEDDINGS_TO_LOAD:
+            break
+
+        # https://arxiv.org/pdf/1602.06023.pdf - "We limited the source vocabulary size to 150K"
+        if len(embeddings) >= NALOPOTY_VOCAB_LIMIT:
             break
         
     token_to_id_fn = lambda token: token_to_id[normalize(token)] if normalize(token) in token_to_id else token_to_id['<UNKNOWN>']
