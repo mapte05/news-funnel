@@ -128,7 +128,7 @@ class RushModel:
                 ], 1)
                 smoothed_input = tf.zeros_like(embedded_input)
                 for i in xrange(self.config.smoothing_window):
-                    smoothed_input += tf.slice(padded_input, [0, i, 0], [-1, self.config.smoothing_window, -1])
+                    smoothed_input += tf.slice(padded_input, [0, i, 0], [-1, self.config.article_length, -1])
                 smoothed_input /= 2.*self.config.smoothing_window + 1.
                 
                 encoded = tf.einsum('bw,bwi->bi', p, smoothed_input)
