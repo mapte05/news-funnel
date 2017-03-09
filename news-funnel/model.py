@@ -331,7 +331,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
             while True:
                 summaries = sess.run([predictions])
                 for summary in summaries:
-                    print ' '.join(id_to_token(id) for id in summary)
+                    print ' '.join(id_to_token[id] for id in summary)
         except tf.errors.OutOfRangeError:
             pass
 
