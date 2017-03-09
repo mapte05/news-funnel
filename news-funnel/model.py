@@ -36,6 +36,7 @@ class Config(object):
     lr_staircase = False
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
+    encoding_method = "attention" # "attention" or "bag-of-words"
     
     max_vocab = 100000 # Nallapati 150k
     max_train_articles = None
@@ -108,26 +109,35 @@ class RushModel:
             W = tf.get_variable("W", shape=(self.config.embed_size, self.config.vocab_size), initializer=xavier_init) # TODO: Might need tweaking depend on encoding method
             b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=zero_init)
 
-            # tf.add_to_collection('vars', U)
-            # tf.add_to_collection('vars', b1)
-            # tf.add_to_collection('vars', V)
-            # tf.add_to_collection('vars', W)
-            # tf.add_to_collection('vars', b2)
-
-
+            P = tf.get_variable("P", shape=(self.config.embed_size, self.config.embed_size*self.config.context_size, self.config.article_length), initializer=xavier_init)
             self.defined = True
-
+        
+            if config.encoding_method == "bag-of-words":
+                encoded = tf.reduce_mean(embedded_context_for_encoding, axis=-2) # average along input
+            elif config.encoding_method == "attention":
+                p = tf.softmax(tf.einsum('ij,bwi,bj->bw', P, embedded_context_for_encoding, embedded_context_for_encoding))
+                
+                # Smoothing
+                start_embedding = tf.nn.embedding_lookup(ids=self.config.start_token, params=encoding_embeddings)
+                end_embedding = tf.nn.embedding_lookup(ids=self.config.end_token, params=encoding_embeddings)
+                padded_input = tf.concat_v2([
+                    tf.tile(tf.expand_dims(tf.expand_dim(start_embedding, 0), 0), [self.config.batch_size, self.config.smoothing_window, 1], axis=2),
+                    input_embeddings,
+                    tf.tile(tf.expand_dims(tf.expand_dim(end_embedding, 0), 0), [self.config.batch_size, self.config.smoothing_window, 1], axis=2)
+                ], 2)
+                smoothed_input = tf.zeros_like(input_embeddings)
+                for i in xrange(self.config.smoothing_window):
+                    smoothed_input += tf.slice(padded_input, [0, i, 0], [-1, self.config.smoothing_window, -1])
+                smoothed_input /= 2.*self.config.smoothing_window + 1.
+                
+                encoded = tf.einsum('bw,bwi->bi', p, smoothed_input)
+            else:
+                raise Exception("encoding method invalid")
+            
             h = tf.tanh(tf.matmul(embedded_context, U) + b1)
-            encoded = self.encode(embedded_input, embedded_context_for_encoding)
             logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
         
             return logits
-
-    def encode(self, embedded_input, embedded_context, method="BOW"):
-        if method == "BOW":
-            return tf.reduce_mean(embedded_input, axis=-2) # average along input
-        if method == "ATT":
-            raise NotImplementedError
 
     def add_loss_op(self, articles, summaries):
         logits = []
