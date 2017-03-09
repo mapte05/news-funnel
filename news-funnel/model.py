@@ -245,7 +245,6 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     saver = tf.train.Saver()
     with tf.Session() as sess:
         sess.run(init)
-        # saver.save(sess, 'my-model')
         counter = 0
 
         print 80 * "="
@@ -258,7 +257,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
                     counter += 1
                     if counter % 50 == 0:
                         print "SAVED PARAMETERS"
-                        saver.save(sess, config.saver_path, global_step=counter)
+                        saver.save(sess, 'news-funnel')
+                        # saver.save(sess, config.saver_path, global_step=counter)
                     loss, _ = sess.run([loss_op, training_op])
                     print "loss:", loss, "| counter:", counter
             except tf.errors.OutOfRangeError:
@@ -297,12 +297,12 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
         allow_smaller_final_batch=True)
     predictions = model.predict(article_batch)
 
-    saver = tf.train.Saver()
+    # saver = tf.train.Saver()
     with tf.Session() as sess:
-        # new_saver = tf.train.import_meta_graph(param_file)
-        # new_saver.restore(sess, tf.train.latest_checkpoint('./'))
-        # all_vars = tf.get_collection('vars')
-        saver.restore(sess, config.saver_path)
+        new_saver = tf.train.import_meta_graph(param_file)
+        new_saver.restore(sess, tf.train.latest_checkpoint('./'))
+        all_vars = tf.get_collection('vars')
+        # saver.restore(sess, config.saver_path)
         print 80 * "="
         print "TRAINING"
         print 80 * "="
