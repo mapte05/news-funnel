@@ -282,7 +282,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 
 
 if __name__ == '__main__':
-    assert(len(sys.argv) <= 4)
+    assert(1 < len(sys.argv) <= 4)
     debug = False
     if sys.argv[1] == "train":
         if len(sys.argv) > 2 and sys.argv[2] == 'debug':
