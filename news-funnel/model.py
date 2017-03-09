@@ -130,7 +130,7 @@ class RushModel:
         
     def predict(self, articles, method="greedy"):
         if method == "greedy":
-            padded_predictions = tf.fill(self.config.start_token, [self.config.batch_size, self.config.context_size])
+            padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
             for i in range(self.config.summary_length):
                 context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
                 logits = self.do_prediction_step(articles, context)
