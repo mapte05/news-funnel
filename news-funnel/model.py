@@ -128,13 +128,13 @@ class RushModel:
     
         return tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries))
         
-    def predict(self, articles, method="beam"):
+    def predict(self, articles, method="greedy"):
         if method == "greedy":
-            padded_predictions = tf.fill(self.config.start_token, [self.config.batch_size, self.config.context_size])
+            padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
             for i in range(self.config.summary_length):
                 context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
                 logits = self.do_prediction_step(articles, context)
-                padded_predictions = tf.concat_v2([padded_predictions, tf.argmax(logits, axis=-1)], 1)
+                padded_predictions = tf.concat_v2([padded_predictions, tf.to_int32(tf.argmax(logits, axis=1))], 1)
             return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
         """
         elif method == "beam":
@@ -187,6 +187,7 @@ class RushModel:
             train_op: The Op for training.
         """
         global_step = tf.Variable(0, trainable=False)
+        # tf.add_to_collection('vars', global_step)
         learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
         return tf.train.AdamOptimizer(learning_rate=self.config.lr).minimize(loss, global_step=global_step)
         
@@ -256,6 +257,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     saver = tf.train.Saver()
     with tf.Session() as sess:
         sess.run(init)
+        # saver.save(sess, 'my-model')
         counter = 0
 
         print 80 * "="
@@ -307,12 +309,12 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
         allow_smaller_final_batch=True)
     predictions = model.predict(article_batch)
 
-    # saver = tf.train.Saver()
+    saver = tf.train.Saver()
     with tf.Session() as sess:
-        new_saver = tf.train.import_meta_graph(param_file)
-        new_saver.restore(sess, tf.train.latest_checkpoint('./'))
-        all_vars = tf.get_collection('vars')
-        # saver.restore(sess, config.saver_path)
+        # new_saver = tf.train.import_meta_graph(param_file)
+        # new_saver.restore(sess, tf.train.latest_checkpoint('./'))
+        # all_vars = tf.get_collection('vars')
+        saver.restore(sess, config.saver_path)
         print 80 * "="
         print "TRAINING"
         print 80 * "="
