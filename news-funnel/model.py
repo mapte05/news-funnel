@@ -36,7 +36,9 @@ class Config(object):
     lr_staircase = False
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
+    
     start_token = None # set during preprocessing
+    end_token = None # set during preprocessing
 
     saver_path = 'variables/news-funnel-model'
     train_article_file = './data/train/valid.article.filter.txt' # TODO: replace at actual training time with 'train/train.article.txt'
@@ -222,7 +224,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, debug=debug)
     config.vocab_size = embeddings.shape[0]
     config.embed_size = embeddings.shape[1]
-    config.start_token = token_to_id('<START>')
+    config.start_token = token_to_id('<s>')
+    config.end_token = token_to_id('<e>')
     print "loaded {0} embeddings".format(config.vocab_size)
     print "took {:.2f} seconds".format(time.time() - start)
 

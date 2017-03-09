@@ -37,7 +37,7 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower(), debug
     token_to_id = {}
     
     # Special start tokens
-    special_tokens = ['<s>', '<u>', '<e>']
+    special_tokens = ['<s>', '<unk>', '<e>']
     for token in special_tokens:
         token_to_id[token] = len(embeddings)
         id_to_token.append(token)
@@ -60,7 +60,7 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower(), debug
         if len(embeddings) >= VOCAB_LIMIT:
             break
         
-    token_to_id_fn = lambda token: token_to_id[normalize(token)] if normalize(token) in token_to_id else token_to_id['<u>']
+    token_to_id_fn = lambda token: token_to_id[normalize(token)] if normalize(token) in token_to_id else token_to_id['<unk>']
     return np.array(embeddings, dtype=np.float32), token_to_id_fn, id_to_token
 
     
