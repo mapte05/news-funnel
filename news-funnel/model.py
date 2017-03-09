@@ -293,6 +293,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
         num_threads=1, 
         enqueue_many=True,
         allow_smaller_final_batch=True)
+    predictions = model.predict(article_batch)
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
@@ -303,7 +304,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
         tf.train.start_queue_runners(sess=sess)
         try:
             while True:
-                summaries = sess.run([model.predict(article_batch)])
+                summaries = sess.run([predictions])
                 for summary in summaries:
                     print ' '.join(id_to_token(id) for id in summary)
         except tf.errors.OutOfRangeError:
