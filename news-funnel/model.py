@@ -113,9 +113,9 @@ class RushModel:
             P = tf.get_variable("P", shape=(self.config.embed_size, self.config.embed_size*self.config.context_size, self.config.article_length), initializer=xavier_init)
             self.defined = True
         
-            if config.encoding_method == "bag-of-words":
+            if self.config.encoding_method == "bag-of-words":
                 encoded = tf.reduce_mean(embedded_context_for_encoding, axis=-2) # average along input
-            elif config.encoding_method == "attention":
+            elif self.config.encoding_method == "attention":
                 p = tf.softmax(tf.einsum('ij,bwi,bj->bw', P, embedded_context_for_encoding, embedded_context_for_encoding))
                 
                 # Smoothing
