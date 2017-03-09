@@ -134,7 +134,7 @@ class RushModel:
             for i in range(self.config.summary_length):
                 context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
                 logits = self.do_prediction_step(articles, context)
-                padded_predictions = tf.concat_v2([padded_predictions, tf.argmax(logits, axis=1)], 1)
+                padded_predictions = tf.concat_v2([padded_predictions, tf.to_int32(tf.argmax(logits, axis=1))], 1)
             return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
         """
         elif method == "beam":
@@ -175,6 +175,7 @@ class RushModel:
             train_op: The Op for training.
         """
         global_step = tf.Variable(0, trainable=False)
+        # tf.add_to_collection('vars', global_step)
         learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
         return tf.train.AdamOptimizer(learning_rate=self.config.lr).minimize(loss, global_step=global_step)
         
