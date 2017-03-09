@@ -161,8 +161,8 @@ class RushModel:
                 padded_predictions = tf.stack()
                 prediction_logits = 
         """        
-        else:
-            raise Exception("predict method not greedy or beam")
+        # else:
+        #     raise Exception("predict method not greedy or beam")
 
     def add_training_op(self, loss):
         """Sets up the training Ops.
