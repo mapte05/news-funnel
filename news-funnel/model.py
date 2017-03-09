@@ -128,7 +128,7 @@ class RushModel:
     
         return tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries))
         
-    def predict(self, articles, method="beam"):
+    def predict(self, articles, method="greedy"):
         if method == "greedy":
             padded_predictions = tf.fill(self.config.start_token, [self.config.batch_size, self.config.context_size])
             for i in range(self.config.summary_length):
@@ -295,12 +295,12 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
         allow_smaller_final_batch=True)
     predictions = model.predict(article_batch)
 
-    # saver = tf.train.Saver()
+    saver = tf.train.Saver()
     with tf.Session() as sess:
-        new_saver = tf.train.import_meta_graph(param_file)
-        new_saver.restore(sess, tf.train.latest_checkpoint('./'))
-        all_vars = tf.get_collection('vars')
-        # saver.restore(sess, config.saver_path)
+        # new_saver = tf.train.import_meta_graph(param_file)
+        # new_saver.restore(sess, tf.train.latest_checkpoint('./'))
+        # all_vars = tf.get_collection('vars')
+        saver.restore(sess, config.saver_path)
         print 80 * "="
         print "TRAINING"
         print 80 * "="
