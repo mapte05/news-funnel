@@ -123,7 +123,7 @@ class RushModel:
                 end_embedding = tf.nn.embedding_lookup(ids=self.config.end_token, params=encoding_embeddings)
                 padded_input = tf.concat_v2([
                     tf.tile(tf.expand_dims(tf.expand_dims(start_embedding, 0), 0), [self.config.batch_size, self.config.smoothing_window, 1]),
-                    input_embeddings,
+                    embedded_input,
                     tf.tile(tf.expand_dims(tf.expand_dims(end_embedding, 0), 0), [self.config.batch_size, self.config.smoothing_window, 1])
                 ], 2)
                 smoothed_input = tf.zeros_like(input_embeddings)
@@ -234,6 +234,9 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     print "INITIALIZING"
     print 80 * "="
     config = Config()
+    
+    if debug:
+        config.max_train_articles = 1000
 
     print "Loading embedding data...",
     start = time.time()
