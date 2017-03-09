@@ -116,7 +116,6 @@ class RushModel:
             if self.config.encoding_method == "bag-of-words":
                 encoded = tf.reduce_mean(embedded_context_for_encoding, axis=-2) # average along input
             elif self.config.encoding_method == "attention":
-                print embedded_input.get_shape(), embedded_context_for_encoding.get_shape()
                 p = tf.nn.softmax(tf.einsum('ij,bwi,bj->bw', P, embedded_input, embedded_context_for_encoding))
                 
                 # Smoothing
@@ -343,8 +342,8 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
     article_batch = tf.train.batch([test_articles],
         batch_size=config.batch_size,
         num_threads=1, 
-        enqueue_many=True,
-        allow_smaller_final_batch=True)
+        enqueue_many=True)
+        #allow_smaller_final_batch=True)
     predictions = model.predict(article_batch)
 
     saver = tf.train.Saver()
