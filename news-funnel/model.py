@@ -125,26 +125,44 @@ class RushModel:
     
         return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries))
         
-    def predict(self, articles):
-        padded_predictions = tf.fill(self.config.start_token, [self.config.batch_size, self.config.context_size])
-        for i in range(self.config.summary_length):
-            context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
-            logits = self.do_prediction_step(articles, context)
-            padded_predictions = tf.concat_v2([padded_predictions, tf.argmax(logits, axis=-1)], 1)
-        return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
-        
+    def predict(self, articles, method="beam"):
+        if method == "greedy":
+            padded_predictions = tf.fill(self.config.start_token, [self.config.batch_size, self.config.context_size])
+            for i in range(self.config.summary_length):
+                context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
+                logits = self.do_prediction_step(articles, context)
+                padded_predictions = tf.concat_v2([padded_predictions, tf.argmax(logits, axis=-1)], 1)
+            return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
         """
-        # Beam search, to be completed
-        padded_predictions = tf.tile(self.config.start_token, [self.config.beam_size, self.config.batch_size, self.config.context_size])
-        prediction_logits = tf.tile(0, [self.config.beam_size, self.config.batch_size, 1])
-        for i in range(self.config.summary_length):
-            contexts = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
-            logits = tf.nn.log_softmax(logits=do_prediction_step(articles, contexts))
-        
-            logits_beam, indices_beam = tf.nn.top_k(input=logits, k=self.config.beam_size)
-            padded_predictions = tf.stack()
-            prediction_logits = 
-        """
+        elif method == "beam":
+            padded_predictions = tf.fill(self.config.start_token, [self.config.batch_size, self.config.beam_size, self.config.context_size])
+            prediction_log_probs = tf.fill(0, [self.config.batch_size, self.config.beam_size])
+            for i in range(self.config.summary_length):
+                context = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
+                
+                log_probs = prediction_log_probs + tf.nn.log_softmax(logits=do_prediction_step(articles, context)) 
+                assert log_probs.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.vocab_size)
+            
+                best_log_probs, best_indices = tf.nn.top_k(input=log_probs, k=self.config.beam_size) 
+                
+                tf.reshape(best_log_probs, (self.batch_size, self.beam_search**2))
+                # dimensions: batch, beam, beam
+                
+                
+                
+                padded_predictions = tf.concat_v2(
+                    padded_prediction[best_indices.remove_last_dim + :], 
+                    best_indices.last_dim
+                )
+                # dimensions: 
+                
+                prediction_log_probs = best_log_probs
+                
+                padded_predictions = tf.stack()
+                prediction_logits = 
+        """        
+        else:
+            raise Exception("predict method not greedy or beam")
 
     def add_training_op(self, loss):
         """Sets up the training Ops.
