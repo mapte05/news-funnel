@@ -339,7 +339,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
                     for id in summary:
                         if id_to_token[id] == '<e>':
                             break
-                        print join(id_to_token[id] ),
+                        print id_to_token[id], ' '
                     print ""
         except tf.errors.OutOfRangeError:
             pass

@@ -82,7 +82,6 @@ def preprocess_data(articles, token_to_id, article_length):
         [np.pad([token_to_id(word) for word in article], (0, article_length), mode='constant', constant_values=token_to_id('<e>'))[0:article_length] for article in articles], 
         ndmin=2,
         dtype=np.int32)
-    print articles[1:10]
     return articles
 
 
