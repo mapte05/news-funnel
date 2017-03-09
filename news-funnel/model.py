@@ -126,11 +126,11 @@ class RushModel:
         return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries))
         
     def predict(self, articles):
-        padded_predictions = tf.tile(self.config.start_token, [self.config.batch_size, self.config.context_size])
+        padded_predictions = tf.fill(self.config.start_token, [self.config.batch_size, self.config.context_size])
         for i in range(self.config.summary_length):
-            contexts = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
-            logits = self.do_prediction_step(articles, contexts)
-            padded_predictions = tf.stack([padded_predictions, tf.nn.arg_max(logits)], axis=-1)
+            context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
+            logits = self.do_prediction_step(articles, context)
+            padded_predictions = tf.concat_v2([padded_predictions, tf.argmax(logits, axis=-1)], 1)
         return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
         
         """
