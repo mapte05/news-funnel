@@ -30,7 +30,7 @@ class Config(object):
     batch_size = 64 # taken from Rush
     n_epochs = 15 # taken from Rush
     n_layers = 3 # taken from Rush (L)
-    lr = 0.005 # Rush uses .05
+    lr = 0.05 # taken from Rush
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
     start_token = None # set during preprocessing
@@ -123,7 +123,7 @@ class RushModel:
             logits.append(self.do_prediction_step(articles, context))
         logits = tf.stack(logits, axis=1)
     
-        return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries))
+        return tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries))
         
     def predict(self, articles):
         padded_predictions = tf.tile(self.config.start_token, [self.config.batch_size, self.config.context_size])
