@@ -36,6 +36,7 @@ class Config(object):
     lr_staircase = False
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
+    optimizer = tf.train.AdamOptimizer
     
     start_token = None # set during preprocessing
     end_token = None # set during preprocessing
@@ -201,7 +202,7 @@ class RushModel:
         global_step = tf.Variable(0, trainable=False)
         # tf.add_to_collection('vars', global_step)
         learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
-        return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
+        return config.optimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
         
 
 
