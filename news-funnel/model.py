@@ -241,6 +241,9 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
 
 
 def test_main(param_file, config_file="config/config_file", load_config_from_file=True, debug=False):
+    print 80 * "="
+    print "INITIALIZING"
+    print 80 * "="
     config = None
     if load_config_from_file:
         config = load_config(config_file)
@@ -270,6 +273,9 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
     saver = tf.train.Saver()
     with tf.Session() as sess:
         saver.restore(sess, param_file)
+        print 80 * "="
+        print "TRAINING"
+        print 80 * "="
         tf.train.start_queue_runners(sess=sess)
         try:
             while True:
