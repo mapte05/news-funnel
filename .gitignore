@@ -1,5 +1,8 @@
 .DS_Store
+
+# news-funnel
 news-funnel/data
+news-funnel/variables
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -30,7 +30,7 @@ class Config(object):
     batch_size = 64 # taken from Rush
     n_epochs = 15 # taken from Rush
     n_layers = 3 # taken from Rush (L)
-    lr = 0.05 # taken from Rush
+    lr = 0.005 # taken from Rush
     lr_decay_base = .5 # taken from Rush
     lr_decay_after_steps = 100000
     lr_staircase = False
