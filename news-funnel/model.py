@@ -324,7 +324,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
         # all_vars = tf.get_collection('vars')
         saver.restore(sess, param_file)
         print 80 * "="
-        print "TRAINING"
+        print "TESTING"
         print 80 * "="
         tf.train.start_queue_runners(sess=sess)
         try:
