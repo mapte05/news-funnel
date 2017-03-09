@@ -123,7 +123,7 @@ class RushModel:
             logits.append(self.do_prediction_step(articles, context))
         logits = tf.stack(logits, axis=1)
     
-        return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries))
+        return tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries))
         
     def predict(self, articles, method="beam"):
         if method == "greedy":
@@ -259,6 +259,9 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
 
 
 def test_main(param_file, config_file="config/config_file", load_config_from_file=True, debug=False):
+    print 80 * "="
+    print "INITIALIZING"
+    print 80 * "="
     config = None
     if load_config_from_file:
         config = load_config(config_file)
@@ -288,6 +291,9 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
     saver = tf.train.Saver()
     with tf.Session() as sess:
         saver.restore(sess, param_file)
+        print 80 * "="
+        print "TRAINING"
+        print 80 * "="
         tf.train.start_queue_runners(sess=sess)
         try:
             while True:
@@ -300,10 +306,15 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 
 
 if __name__ == '__main__':
-    assert(len(sys.argv) == 2 or len(sys.argv) == 3)
+    assert(1 < len(sys.argv) <= 4)
+    debug = False
     if sys.argv[1] == "train":
-        train_main()
+        if len(sys.argv) > 2 and sys.argv[2] == 'debug':
+            debug = True
+        train_main(debug=debug)
     elif sys.argv[1] == "test":
-        test_main(arg[2])
+        if len(sys.argv) > 2 and sys.argv[3] == 'debug':
+            debug = True
+        test_main(arg[2], debug=debug)
     else:
         print "please specify your model: \"train\" or \"test\""

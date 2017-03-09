@@ -7,6 +7,10 @@ from ps2_general_utils import get_minibatches
 import numpy as np
 
 
+NUM_EMBEDDINGS_TO_LOAD = 100000 # used to be 10000
+NUM_ARTICLES_TO_LOAD = 100000 # used to be 1000
+
+
 '''
 Taken verbatim from PS2
 '''
@@ -47,7 +51,7 @@ def load_embeddings(embedding_file, normalize=lambda token: token.lower(), debug
         id_to_token.append(sp[0])
         embeddings.append(np.array([float(x) for x in sp[1:]]))
         
-        if debug and len(embeddings) >= 10000:
+        if debug and len(embeddings) >= NUM_EMBEDDINGS_TO_LOAD:
             break
         
     token_to_id_fn = lambda token: token_to_id[normalize(token)] if normalize(token) in token_to_id else token_to_id['<UNKNOWN>']
@@ -63,7 +67,7 @@ def load_data(article_file, debug=False):
         for article in af.readlines():
             articles.append(article.split())
             
-            if debug and len(articles) >= 1000:
+            if debug and len(articles) >= NUM_ARTICLES_TO_LOAD:
                 break
     return articles
 
