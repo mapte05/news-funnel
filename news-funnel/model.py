@@ -271,7 +271,13 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
             
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
-    with tf.Session() as sess:
+    
+    # from: http://stackoverflow.com/questions/34199233/how-to-prevent-tensorflow-from-allocating-the-totality-of-a-gpu-memory
+    # gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.2)
+    # with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth=True
+    with tf.Session(config=config) as sess:
         sess.run(init)
         counter = 0
 
