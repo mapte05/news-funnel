@@ -295,7 +295,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
         allow_smaller_final_batch=True)
     predictions = model.predict(article_batch)
 
-    saver = tf.train.Saver()
+    # saver = tf.train.Saver()
     with tf.Session() as sess:
         new_saver = tf.train.import_meta_graph(param_file)
         new_saver.restore(sess, tf.train.latest_checkpoint('./'))
