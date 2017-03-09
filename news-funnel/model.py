@@ -282,10 +282,15 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 
 
 if __name__ == '__main__':
-    assert(len(sys.argv) == 2 or len(sys.argv) == 3)
+    assert(len(sys.argv) <= 4)
+    debug = False
     if sys.argv[1] == "train":
-        train_main()
+        if len(sys.argv) > 2 and sys.argv[2] == 'debug':
+            debug = True
+        train_main(debug=debug)
     elif sys.argv[1] == "test":
-        test_main(arg[2])
+        if len(sys.argv) > 2 and sys.argv[3] == 'debug':
+            debug = True
+        test_main(arg[2], debug=debug)
     else:
         print "please specify your model: \"train\" or \"test\""
