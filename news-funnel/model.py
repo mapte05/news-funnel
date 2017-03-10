@@ -242,15 +242,16 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, load
         config.max_train_articles = 1000
 
     print "Loading embedding data...",
-        start = time.time()
-        embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, config.max_vocab)
-        config.vocab_size = embeddings.shape[0]
-        config.embed_size = embeddings.shape[1]
-        config.start_token = token_to_id('<s>')
-        config.end_token = token_to_id('<e>')
-        config.null_token = token_to_id('<null>')
-        print "loaded {0} embeddings".format(config.vocab_size)
-        print "took {:.2f} seconds".format(time.time() - start)
+    start = time.time()
+    embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, config.max_vocab)
+    config.vocab_size = embeddings.shape[0]
+    config.embed_size = embeddings.shape[1]
+    config.start_token = token_to_id('<s>')
+    config.end_token = token_to_id('<e>')
+    config.null_token = token_to_id('<null>')
+    print "loaded {0} embeddings".format(config.vocab_size)
+    print "took {:.2f} seconds".format(time.time() - start)
+    
 
     if load_preprocessed_from_file:
         train_articles = numpy.load(preprocessed_articles_file)
