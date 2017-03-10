@@ -397,7 +397,8 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
     with tf.Session() as sess:
         saver.restore(sess, param_file)
         coord = tf.train.Coordinator()
-        threading.Thread(target=load_example, args=(sess, enqueue, coord)).start()
+        thread = threading.Thread(target=load_example, args=(sess, enqueue, coord))
+        thread.start()
         tf.train.start_queue_runners(sess=sess)
         
         print >> sys.stderr,  80 * "="
@@ -417,7 +418,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
                     
                     if i >= test_articles.shape[0]:
                         coord.request_stop()
-                        coord.join()
+                        coord.join([thread])
                         return
 
 
