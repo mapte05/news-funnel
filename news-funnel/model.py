@@ -55,8 +55,8 @@ class Config(object):
     test_title_file = './data/giga/task1_ref0.txt'
     embedding_file = './data/glove.6B.50d.txt' #TODO: replace with 'glove.6B.200d.txt
     
-    preprocessed_articles_file="preprocessed_articles_file"
-    preprocessed_summaries_file="preprocessed_summaries_file"
+    preprocessed_articles_file="preprocessed_articles_file.npy"
+    preprocessed_summaries_file="preprocessed_summaries_file.npy"
     
 
 class RushModel:
