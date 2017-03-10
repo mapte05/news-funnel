@@ -306,10 +306,11 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     write_config(config, config_file)
 
     def load_example(sess, enqueue, coord):
-        while not coord.should_stop():
-            while True:
-                for i in xrange(train_articles.shape[0]):
-                    sess.run(enqueue, feed_dict={article_input: train_articles[i], summary_input: train_summaries[i]})
+        while True:
+            for i in xrange(train_articles.shape[0]):
+                sess.run(enqueue, feed_dict={article_input: train_articles[i], summary_input: train_summaries[i]})
+                if coord.should_stop():
+                    return
 
     model = RushModel(embeddings, config)
     
@@ -376,12 +377,15 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
     def load_example(sess, enqueue, coord):
-        while not coord.should_stop():
-            for i in xrange(test_articles.shape[0]):
-                sess.run(enqueue, feed_dict={article_input: test_articles[i]})
-            while i % config.batch_size != 0:
-                sess.run(enqueue, feed_dict={article_input: test_articles[0]})
-                i += 1
+        for i in xrange(test_articles.shape[0]):
+            sess.run(enqueue, feed_dict={article_input: test_articles[i]})
+            if coord.should_stop():
+                return
+        while i % config.batch_size != 0:
+            sess.run(enqueue, feed_dict={article_input: test_articles[0]})
+            i += 1
+            if coord.should_stop():
+                return
     
     model = RushModel(embeddings, config)
 
