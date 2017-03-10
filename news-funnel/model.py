@@ -261,7 +261,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
 
     print "Loading training data...",
     start = time.time()
-    if not debug and not reload_data and os.path.isfile(config.preprocessed_articles_file) and os.path.isfile(config.preprocessed_summaries_file):
+    if not reload_data and os.path.isfile(config.preprocessed_articles_file) and os.path.isfile(config.preprocessed_summaries_file):
         train_articles = np.load(config.preprocessed_articles_file)
         train_summaries = np.load(config.preprocessed_summaries_file)
         
