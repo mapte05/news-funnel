@@ -260,6 +260,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     print "took {:.2f} seconds".format(time.time() - start)
 
     print "Loading training data...",
+    start = time.time()
     if not debug and not reload_data and os.path.isfile(config.preprocessed_articles_file) and os.path.isfile(config.preprocessed_summaries_file):
         train_articles = np.load(config.preprocessed_articles_file)
         train_summaries = np.load(config.preprocessed_summaries_file)
@@ -267,7 +268,6 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         config.article_length = train_articles.shape[1]
         config.summary_length = train_summaries.shape[1]
     else:
-        start = time.time()
         train_articles = load_data(config.train_article_file, config.max_train_articles)
         config.article_length = article_length = max([len(x) for x in train_articles]) + 1
         train_articles = preprocess_data(train_articles, token_to_id, article_length)
