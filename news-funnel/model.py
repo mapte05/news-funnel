@@ -43,6 +43,10 @@ class Config(object):
     max_vocab = 100000 # Nallapati 150k
     max_train_articles = None
     
+    # Limits for memory conserve
+    max_summary_length = 26
+    max_article_length = 96
+    
     start_token = None # set during preprocessing
     end_token = None # set during preprocessing
     null_token = None # set during preprocessing
@@ -275,11 +279,11 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         config.summary_length = train_summaries.shape[1]
     else:
         train_articles = load_data(config.train_article_file, config.max_train_articles)
-        config.article_length = article_length = max([len(x) for x in train_articles]) + 1
+        config.article_length = article_length = min(max(len(x) for x in train_articles) + 1, config.max_article_length)
         train_articles = preprocess_data(train_articles, token_to_id, article_length)
         
         train_summaries = load_data(config.train_title_file, config.max_train_articles)
-        config.summary_length = summary_length = max([len(x) for x in train_summaries]) + 1
+        config.summary_length = summary_length = min(max(len(x) for x in train_summaries) + 1, config.max_summary_length)
         train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
 
         np.save(config.preprocessed_articles_file, train_articles)
@@ -305,7 +309,6 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         while not coord.should_stop():
             while True:
                 for i in xrange(train_articles.shape[0]):
-                    print i
                     sess.run(enqueue, feed_dict={article_input: train_articles[i], summary_input: train_summaries[i]})
 
     model = RushModel(embeddings, config)
