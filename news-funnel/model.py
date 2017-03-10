@@ -304,7 +304,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
     summary_input = tf.placeholder(tf.int32, shape=(config.article_length,))
     enqueue = queue.enqueue([article_input, summary_input])
-    article_batch, summary_batch = queue.dequeue_many(config.batch_size) 
+    article_batch, summary_batch = queue.dequeue_many(config.batch_size)
     """
     tf.train.shuffle_batch([train_articles, train_summaries], 
         batch_size=config.batch_size,
@@ -313,6 +313,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
         min_after_dequeue=10,
         enqueue_many=True)
     """
+    config.batch_size = tf.shape(article_input)[0] # hacky
     loss_op = model.add_loss_op(article_batch, summary_batch)
     training_op = model.add_training_op(loss_op)
     
