@@ -262,8 +262,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
         train_articles = np.load(config.preprocessed_articles_file)
         train_summaries = np.load(config.preprocessed_summaries_file)
         
-        config.article_length = max([len(x) for x in train_articles]) + 1
-        config.summary_length = max([len(x) for x in train_summaries]) + 1
+        config.article_length = train_articles.shape[1]
+        config.summary_length = train_summaries.shape[1]
     else:
         start = time.time()
         train_articles = load_data(config.train_article_file, config.max_train_articles)
