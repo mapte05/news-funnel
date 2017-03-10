@@ -46,6 +46,7 @@ class Config(object):
     start_token = None # set during preprocessing
     end_token = None # set during preprocessing
     null_token = None # set during preprocessing
+    unknown_token = None # set during preprocessing
 
     saver_path = 'variables/news-funnel-model'
     train_article_file = './data/train/train.article.txt'
@@ -167,6 +168,7 @@ class RushModel:
             for i in range(self.config.summary_length):
                 context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
                 logits = self.do_prediction_step(articles, context)
+                #logits[:, config.unknown_token] = -1000000. # Ignore unknown
                 padded_predictions = tf.concat_v2([padded_predictions, tf.expand_dims(tf.to_int32(tf.argmax(logits, axis=1)), -1)], 1)
             return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
         """
@@ -256,6 +258,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     config.start_token = token_to_id('<s>')
     config.end_token = token_to_id('<e>')
     config.null_token = token_to_id('<null>')
+    config.unknown_token = token_to_id('<unk>')
     print "loaded {0} embeddings".format(config.vocab_size)
     print "took {:.2f} seconds".format(time.time() - start)
 
