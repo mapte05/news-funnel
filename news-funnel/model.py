@@ -251,7 +251,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, load
     config.null_token = token_to_id('<null>')
     print "loaded {0} embeddings".format(config.vocab_size)
     print "took {:.2f} seconds".format(time.time() - start)
-    
+
 
     if load_preprocessed_from_file:
         train_articles = numpy.load(preprocessed_articles_file)
@@ -384,7 +384,7 @@ if __name__ == '__main__':
         load_preprocessed_from_file = False
         if len(sys.argv) > 2 and sys.argv[2] == 'debug':
             debug = True
-        if len(sys.argv) > 3 and sys.argv[3] == 'load' or if len(sys.argv) > 3 and sys.argv[2] == 'load':
+        if len(sys.argv) > 3 and sys.argv[3] == 'load' or len(sys.argv) > 3 and sys.argv[2] == 'load':
             load_preprocessed_from_file = True
         train_main(debug=debug, load_preprocessed_from_file=load_preprocessed_from_file)
     elif sys.argv[1] == "test":
