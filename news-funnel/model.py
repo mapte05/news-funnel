@@ -416,6 +416,8 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
                     i += 1
                     
                     if i >= test_articles.shape[0]:
+                        coord.request_stop()
+                        coord.join()
                         return
 
 
