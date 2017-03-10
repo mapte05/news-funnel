@@ -269,7 +269,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, load
         print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
         print "took {:.2f} seconds".format(time.time() - start)
 
-        np.save(preprocessed_article_file, train_articles)
+        np.save(preprocessed_articles_file, train_articles)
         np.save(preprocessed_summaries_file, train_summaries)
 
     if run_dev:
