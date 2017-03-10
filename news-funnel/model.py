@@ -235,7 +235,7 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file="config/config_file", debug=True, run_dev=False):
+def train_main(config_file="config/config_file", debug=True, run_dev=False, reload_data=False):
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
@@ -260,7 +260,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     print "took {:.2f} seconds".format(time.time() - start)
 
     print "Loading training data...",
-    if os.path.isfile(config.preprocessed_articles_file) and os.path.isfile(config.preprocessed_summaries_file):
+    if not reload_data and os.path.isfile(config.preprocessed_articles_file) and os.path.isfile(config.preprocessed_summaries_file):
         train_articles = np.load(config.preprocessed_articles_file)
         train_summaries = np.load(config.preprocessed_summaries_file)
         
@@ -406,15 +406,9 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 if __name__ == '__main__':
     assert(1 < len(sys.argv) <= 4)
     debug = False
-    if sys.argv[1] == "train":
-        if 'debug' in sys.argv:
-            debug = True
-        if 'reload' in sys.argv:
-            reload = True
-        train_main(debug=debug, load_config_from_file=reload)
-    elif sys.argv[1] == "test":
-        if 'debug' in sys.argv:
-            debug = True
-        test_main(sys.argv[2], debug=debug)
+    if 'train' in sys.argv:
+        train_main(debug=('debug' in sys.argv), reload_data=('reload' in sys.argv))
+    elif 'test' in sys.argv:
+        test_main(debug=('debug' in sys.argv))
     else:
         print >> sys.stderr, "please specify your model: \"train\" or \"test\""
