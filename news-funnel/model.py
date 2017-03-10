@@ -49,13 +49,13 @@ class Config(object):
     unknown_token = None # set during preprocessing
 
     saver_path = 'variables/news-funnel-model'
-    # train_article_file = './data/train/train.article.txt'
-    # train_title_file = './data/train/train.title.txt'
+    train_article_file = './data/train/train.article.txt'
+    train_title_file = './data/train/train.title.txt'
     preprocessed_articles_file="preprocessed_articles_file.npy"
     preprocessed_summaries_file="preprocessed_summaries_file.npy"
     
-    train_article_file = './data/train/valid.article.filter.txt' # for debug
-    train_title_file = './data/train/valid.title.filter.txt' # for debug
+    #train_article_file = './data/train/valid.article.filter.txt' # for debug
+    #train_title_file = './data/train/valid.title.filter.txt' # for debug
     #preprocessed_articles_file="preprocessed_articles_file_valid.npy"
     #preprocessed_summaries_file="preprocessed_summaries_file_valid.npy"
     
@@ -276,16 +276,14 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     else:
         train_articles = load_data(config.train_article_file, config.max_train_articles)
         config.article_length = article_length = max([len(x) for x in train_articles]) + 1
-        print "article length =", config.article_length
         train_articles = preprocess_data(train_articles, token_to_id, article_length)
         
         train_summaries = load_data(config.train_title_file, config.max_train_articles)
         config.summary_length = summary_length = max([len(x) for x in train_summaries]) + 1
-        print "summary length = ", config.summary_length
         train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
 
-        # np.save(config.preprocessed_articles_file, train_articles)
-        # np.save(config.preprocessed_summaries_file, train_summaries)
+        np.save(config.preprocessed_articles_file, train_articles)
+        np.save(config.preprocessed_summaries_file, train_summaries)
     assert train_articles.shape[0] == train_summaries.shape[0]
     print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
     print "took {:.2f} seconds".format(time.time() - start)
