@@ -49,15 +49,15 @@ class Config(object):
     unknown_token = None # set during preprocessing
 
     saver_path = 'variables/news-funnel-model'
-    #train_article_file = './data/train/train.article.txt'
-    #train_title_file = './data/train/train.title.txt'
-    #preprocessed_articles_file="preprocessed_articles_file.npy"
-    #preprocessed_summaries_file="preprocessed_summaries_file.npy"
+    train_article_file = './data/train/train.article.txt'
+    train_title_file = './data/train/train.title.txt'
+    preprocessed_articles_file="preprocessed_articles_file.npy"
+    preprocessed_summaries_file="preprocessed_summaries_file.npy"
     
-    train_article_file = './data/train/valid.article.filter.txt' # for debug
-    train_title_file = './data/train/valid.title.filter.txt' # for debug
-    preprocessed_articles_file="preprocessed_articles_file_valid.npy"
-    preprocessed_summaries_file="preprocessed_summaries_file_valid.npy"
+    #train_article_file = './data/train/valid.article.filter.txt' # for debug
+    #train_title_file = './data/train/valid.title.filter.txt' # for debug
+    #preprocessed_articles_file="preprocessed_articles_file_valid.npy"
+    #preprocessed_summaries_file="preprocessed_summaries_file_valid.npy"
     
     dev_article_file = './data/train/valid.article.filter.txt'
     dev_title_file = './data/train/valid.title.filter.txt'
