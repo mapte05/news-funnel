@@ -46,8 +46,8 @@ class Config(object):
     null_token = None # set during preprocessing
 
     saver_path = 'variables/news-funnel-model'
-    train_article_file = './data/train/valid.article.filter.txt' # TODO: replace at actual training time with 'train/train.article.txt'
-    train_title_file = './data/train/valid.title.filter.txt' # TODO: replace at actual training time with 'train/train.title.txt'
+    train_article_file = './data/train/train/train.article.txt' # used to be valid.article.filter.txt
+    train_title_file = './data/train/train/train.title.txt' # used to be valid.title.filter.txt'
     dev_article_file = './data/train/valid.article.filter.txt'
     dev_title_file = './data/train/valid.title.filter.txt'
     test_article_file = './data/giga/input.txt' # also need to test on duc2003/duc2004
@@ -277,8 +277,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     article_batch, summary_batch =  tf.train.shuffle_batch([train_articles, train_summaries], 
         batch_size=config.batch_size,
         num_threads=1,
-        capacity=32
-        min_after_dequeue=10,   # TODO make bigger during real stuff
+        capacity=32,
+        min_after_dequeue=10,
         enqueue_many=True)
     loss_op = model.add_loss_op(article_batch, summary_batch)
     training_op = model.add_training_op(loss_op)
