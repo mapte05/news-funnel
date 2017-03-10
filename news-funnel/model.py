@@ -228,50 +228,62 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file="config/config_file", debug=True, run_dev=False):
+def train_main(config_file="config/config_file", debug=True, run_dev=False, load_preprocessed_from_file=False, preprocessed_articles_file="preprocessed_articles_file", preprocessed_summaries_file="preprocessed_summaries_file"):
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
     config = Config()
+    train_articles = None
+    train_summaries = None
+    dev_articles = None
+    dev_summaries = None
     
     if debug:
         config.max_train_articles = 1000
 
     print "Loading embedding data...",
-    start = time.time()
-    embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, config.max_vocab)
-    config.vocab_size = embeddings.shape[0]
-    config.embed_size = embeddings.shape[1]
-    config.start_token = token_to_id('<s>')
-    config.end_token = token_to_id('<e>')
-    config.null_token = token_to_id('<null>')
-    print "loaded {0} embeddings".format(config.vocab_size)
-    print "took {:.2f} seconds".format(time.time() - start)
+        start = time.time()
+        embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, config.max_vocab)
+        config.vocab_size = embeddings.shape[0]
+        config.embed_size = embeddings.shape[1]
+        config.start_token = token_to_id('<s>')
+        config.end_token = token_to_id('<e>')
+        config.null_token = token_to_id('<null>')
+        print "loaded {0} embeddings".format(config.vocab_size)
+        print "took {:.2f} seconds".format(time.time() - start)
 
-    print "Loading training data...",
-    start = time.time()
-    train_articles = load_data(config.train_article_file, config.max_train_articles)
-    config.article_length = article_length = max([len(x) for x in train_articles]) + 1
-    train_articles = preprocess_data(train_articles, token_to_id, article_length)
-    
-    train_summaries = load_data(config.train_title_file, config.max_train_articles)
-    config.summary_length = summary_length = max([len(x) for x in train_summaries]) + 1
-    train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
-    print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
-    print "took {:.2f} seconds".format(time.time() - start)
+    if load_preprocessed_from_file:
+        train_articles = numpy.load(preprocessed_articles_file)
+        train_summaries = numpy.load(preprocessed_summaries_file)
+    else:
+        print "Loading training data...",
+        start = time.time()
+        train_articles = load_data(config.train_article_file, config.max_train_articles)
+        config.article_length = article_length = max([len(x) for x in train_articles]) + 1
+        train_articles = preprocess_data(train_articles, token_to_id, article_length)
+        
+        train_summaries = load_data(config.train_title_file, config.max_train_articles)
+        config.summary_length = summary_length = max([len(x) for x in train_summaries]) + 1
+        train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
+        print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
+        print "took {:.2f} seconds".format(time.time() - start)
+
+        numpy.save(preprocessed_article_file, train_articles)
+        numpy.save(preprocessed_summaries_file, train_summaries)
 
     if run_dev:
-        print "Loading dev data...",
-        start = time.time()
-        dev_articles = load_data(config.dev_article_file)
-        dev_articles = preprocess_data(dev_articles, token_to_id, config.article_length)
-        
-        dev_summaries = load_data(config.dev_title_file)
-        dev_summaries = preprocess_data(dev_summaries, token_to_id, config.summary_length)
-        print "took {:.2f} seconds".format(time.time() - start)
+            print "Loading dev data...",
+            start = time.time()
+            dev_articles = load_data(config.dev_article_file)
+            dev_articles = preprocess_data(dev_articles, token_to_id, config.article_length)
+            
+            dev_summaries = load_data(config.dev_title_file)
+            dev_summaries = preprocess_data(dev_summaries, token_to_id, config.summary_length)
+            print "took {:.2f} seconds".format(time.time() - start)
 
     print "writing Config to file"
     write_config(config, config_file)
+
 
     model = RushModel(embeddings, config)
     article_batch, summary_batch =  tf.train.shuffle_batch([train_articles, train_summaries], 
@@ -286,9 +298,6 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
 
-    # from: http://stackoverflow.com/questions/34199233/how-to-prevent-tensorflow-from-allocating-the-totality-of-a-gpu-memory
-    #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.2)
-    #with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
     with tf.Session() as sess:
         sess.run(init)
         counter = 0
@@ -371,9 +380,12 @@ if __name__ == '__main__':
     assert(1 < len(sys.argv) <= 4)
     debug = False
     if sys.argv[1] == "train":
+        load_preprocessed_from_file = False
         if len(sys.argv) > 2 and sys.argv[2] == 'debug':
             debug = True
-        train_main(debug=debug)
+        if len(sys.argv) > 3 and sys.argv[3] == 'load' or if len(sys.argv) > 3 and sys.argv[2] == 'load':
+            load_preprocessed_from_file = True
+        train_main(debug=debug, load_preprocessed_from_file=load_preprocessed_from_file)
     elif sys.argv[1] == "test":
         if len(sys.argv) > 3 and sys.argv[3] == 'debug':
             debug = True
