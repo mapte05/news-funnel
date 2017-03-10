@@ -276,7 +276,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     else:
         train_articles = load_data(config.train_article_file, config.max_train_articles)
         config.article_length = article_length = max([len(x) for x in train_articles]) + 1
-        print "article length" = config.article_length
+        print "article length =", config.article_length
         train_articles = preprocess_data(train_articles, token_to_id, article_length)
         
         train_summaries = load_data(config.train_title_file, config.max_train_articles)
