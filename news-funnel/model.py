@@ -296,11 +296,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
                     sess.run(enqueue, feed_dict={article_input: train_articles[i], summary_input: train_summaries[i]})
 
     model = RushModel(embeddings, config)
-    queue = tf.FIFOQueue(
-        capacity=10000, 
-        min_after_dequeue=10,
-        dtypes=[tf.int32, tf.int32]
-    )
+    
+    queue = tf.FIFOQueue(10000, 100, dtypes=[tf.int32, tf.int32])
     article_input = tf.placeholder(tf.int_32, config.article_length)
     summary_input = tf.placeholder(tf.int_32, config.article_length)
     enqueue = queue.enqueue([article_input, summary_input])
