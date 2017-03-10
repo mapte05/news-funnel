@@ -378,9 +378,9 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
     def load_example(sess, enqueue, coord):
         while not coord.should_stop():
             for i in xrange(test_articles.shape[0]):
-                sess.run(enqueue, feed_dict={article_input: train_articles[i]})
+                sess.run(enqueue, feed_dict={article_input: test_articles[i]})
             while i % config.batch_size != 0:
-                sess.run(enqueue, feed_dict={article_input: train_articles[0]})
+                sess.run(enqueue, feed_dict={article_input: test_articles[0]})
                 i += 1
     
     model = RushModel(embeddings, config)
