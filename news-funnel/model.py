@@ -407,7 +407,7 @@ if __name__ == '__main__':
     assert(1 < len(sys.argv) <= 4)
     debug = False
     if 'train' in sys.argv:
-        train_main(debug=('debug' in sys.argv), reload_data=('reload' in sys.argv))
+        train_main(debug=('debug' in sys.argv), reload_data=('rewrite' in sys.argv))
     elif 'test' in sys.argv:
         test_main(sys.argv[2], debug=('debug' in sys.argv))
     else:
