@@ -46,8 +46,8 @@ class Config(object):
     null_token = None # set during preprocessing
 
     saver_path = 'variables/news-funnel-model'
-    train_article_file = './data/train/valid.article.filter.txt' # TODO: replace at actual training time with 'train/train.article.txt'
-    train_title_file = './data/train/valid.title.filter.txt' # TODO: replace at actual training time with 'train/train.title.txt'
+    train_article_file = './data/train/train.article.txt' # used to be valid.article.filter.txt
+    train_title_file = './data/train/train.title.txt' # used to be valid.title.filter.txt
     dev_article_file = './data/train/valid.article.filter.txt'
     dev_title_file = './data/train/valid.title.filter.txt'
     test_article_file = './data/giga/input.txt' # also need to test on duc2003/duc2004
@@ -228,11 +228,15 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file="config/config_file", debug=True, run_dev=False):
+def train_main(config_file="config/config_file", debug=True, run_dev=False, load_preprocessed_from_file=False, preprocessed_articles_file="preprocessed_articles_file", preprocessed_summaries_file="preprocessed_summaries_file"):
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
     config = Config()
+    train_articles = None
+    train_summaries = None
+    dev_articles = None
+    dev_summaries = None
     
     if debug:
         config.max_train_articles = 1000
@@ -249,27 +253,34 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     print "took {:.2f} seconds".format(time.time() - start)
 
     print "Loading training data...",
-    start = time.time()
-    train_articles = load_data(config.train_article_file, config.max_train_articles)
-    config.article_length = article_length = max([len(x) for x in train_articles]) + 1
-    train_articles = preprocess_data(train_articles, token_to_id, article_length)
-    
-    train_summaries = load_data(config.train_title_file, config.max_train_articles)
-    config.summary_length = summary_length = max([len(x) for x in train_summaries]) + 1
-    train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
+    if load_preprocessed_from_file:
+        train_articles = np.load(preprocessed_articles_file)
+        train_summaries = np.load(preprocessed_summaries_file)
+    else:
+        start = time.time()
+        train_articles = load_data(config.train_article_file, config.max_train_articles)
+        config.article_length = article_length = max([len(x) for x in train_articles]) + 1
+        train_articles = preprocess_data(train_articles, token_to_id, article_length)
+        
+        train_summaries = load_data(config.train_title_file, config.max_train_articles)
+        config.summary_length = summary_length = max([len(x) for x in train_summaries]) + 1
+        train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
+
+        np.save(preprocessed_articles_file, train_articles)
+        np.save(preprocessed_summaries_file, train_summaries)
     assert train_articles.shape[0] == train_summaries.shape[0]
     print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
     print "took {:.2f} seconds".format(time.time() - start)
 
     if run_dev:
-        print "Loading dev data...",
-        start = time.time()
-        dev_articles = load_data(config.dev_article_file)
-        dev_articles = preprocess_data(dev_articles, token_to_id, config.article_length)
-        
-        dev_summaries = load_data(config.dev_title_file)
-        dev_summaries = preprocess_data(dev_summaries, token_to_id, config.summary_length)
-        print "took {:.2f} seconds".format(time.time() - start)
+            print "Loading dev data...",
+            start = time.time()
+            dev_articles = load_data(config.dev_article_file)
+            dev_articles = preprocess_data(dev_articles, token_to_id, config.article_length)
+            
+            dev_summaries = load_data(config.dev_title_file)
+            dev_summaries = preprocess_data(dev_summaries, token_to_id, config.summary_length)
+            print "took {:.2f} seconds".format(time.time() - start)
 
     print "writing Config to file"
     write_config(config, config_file)
@@ -279,7 +290,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
             while True:
                 for i in xrange(train_articles.shape[0]):
                     sess.run(enqueue, feed_dict={article_input: train_articles[i], summary_input: train_summaries[i]})
-        
+
     model = RushModel(embeddings, config)
     queue = tf.FIFOQueue(
         capacity=10000, 
@@ -294,8 +305,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     tf.train.shuffle_batch([train_articles, train_summaries], 
         batch_size=config.batch_size,
         num_threads=1,
-        capacity=32
-        min_after_dequeue=10,   # TODO make bigger during real stuff
+        capacity=32,
+        min_after_dequeue=10,
         enqueue_many=True)
     """
     loss_op = model.add_loss_op(article_batch, summary_batch)
@@ -386,9 +397,12 @@ if __name__ == '__main__':
     assert(1 < len(sys.argv) <= 4)
     debug = False
     if sys.argv[1] == "train":
+        load_preprocessed_from_file = False
         if len(sys.argv) > 2 and sys.argv[2] == 'debug':
             debug = True
-        train_main(debug=debug)
+        if len(sys.argv) > 3 and sys.argv[3] == 'load' or len(sys.argv) > 3 and sys.argv[2] == 'load':
+            load_preprocessed_from_file = True
+        train_main(debug=debug, load_preprocessed_from_file=load_preprocessed_from_file)
     elif sys.argv[1] == "test":
         if len(sys.argv) > 3 and sys.argv[3] == 'debug':
             debug = True
