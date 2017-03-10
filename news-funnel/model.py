@@ -10,6 +10,7 @@ import numpy as np
 import time
 import pickle
 import sys
+import os
 from utils.model_utils import load_embeddings, load_data, preprocess_data
 
 
@@ -53,6 +54,9 @@ class Config(object):
     test_article_file = './data/giga/input.txt' # also need to test on duc2003/duc2004
     test_title_file = './data/giga/task1_ref0.txt'
     embedding_file = './data/glove.6B.50d.txt' #TODO: replace with 'glove.6B.200d.txt
+    
+    preprocessed_articles_file="preprocessed_articles_file"
+    preprocessed_summaries_file="preprocessed_summaries_file"
     
 
 class RushModel:
@@ -228,7 +232,7 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file="config/config_file", debug=True, run_dev=False, load_preprocessed_from_file=False, preprocessed_articles_file="preprocessed_articles_file", preprocessed_summaries_file="preprocessed_summaries_file"):
+def train_main(config_file="config/config_file", debug=True, run_dev=False):
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
@@ -253,9 +257,9 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, load
     print "took {:.2f} seconds".format(time.time() - start)
 
     print "Loading training data...",
-    if load_preprocessed_from_file:
-        train_articles = np.load(preprocessed_articles_file)
-        train_summaries = np.load(preprocessed_summaries_file)
+    if os.path.isfile(config.preprocessed_articles_file) and os.path.isfile(config.preprocessed_summaries_file):
+        train_articles = np.load(config.preprocessed_articles_file)
+        train_summaries = np.load(config.preprocessed_summaries_file)
     else:
         start = time.time()
         train_articles = load_data(config.train_article_file, config.max_train_articles)
@@ -266,21 +270,21 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, load
         config.summary_length = summary_length = max([len(x) for x in train_summaries]) + 1
         train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
 
-        np.save(preprocessed_articles_file, train_articles)
-        np.save(preprocessed_summaries_file, train_summaries)
+        np.save(config.preprocessed_articles_file, train_articles)
+        np.save(config.preprocessed_summaries_file, train_summaries)
     assert train_articles.shape[0] == train_summaries.shape[0]
     print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
     print "took {:.2f} seconds".format(time.time() - start)
 
     if run_dev:
-            print "Loading dev data...",
-            start = time.time()
-            dev_articles = load_data(config.dev_article_file)
-            dev_articles = preprocess_data(dev_articles, token_to_id, config.article_length)
-            
-            dev_summaries = load_data(config.dev_title_file)
-            dev_summaries = preprocess_data(dev_summaries, token_to_id, config.summary_length)
-            print "took {:.2f} seconds".format(time.time() - start)
+        print "Loading dev data...",
+        start = time.time()
+        dev_articles = load_data(config.dev_article_file)
+        dev_articles = preprocess_data(dev_articles, token_to_id, config.article_length)
+        
+        dev_summaries = load_data(config.dev_title_file)
+        dev_summaries = preprocess_data(dev_summaries, token_to_id, config.summary_length)
+        print "took {:.2f} seconds".format(time.time() - start)
 
     print "writing Config to file"
     write_config(config, config_file)
@@ -397,12 +401,9 @@ if __name__ == '__main__':
     assert(1 < len(sys.argv) <= 4)
     debug = False
     if sys.argv[1] == "train":
-        load_preprocessed_from_file = False
         if len(sys.argv) > 2 and sys.argv[2] == 'debug':
             debug = True
-        if len(sys.argv) > 3 and sys.argv[3] == 'load' or len(sys.argv) > 3 and sys.argv[2] == 'load':
-            load_preprocessed_from_file = True
-        train_main(debug=debug, load_preprocessed_from_file=load_preprocessed_from_file)
+        train_main(debug=debug)
     elif sys.argv[1] == "test":
         if len(sys.argv) > 3 and sys.argv[3] == 'debug':
             debug = True
