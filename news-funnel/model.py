@@ -334,18 +334,15 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
         print 80 * "="
         print "TRAINING"
         print 80 * "="
-        for epoch in range(config.n_epochs): # note: first epoch never ends
-            try:
-                while True:
-                    counter += 1
-                    if counter % 50 == 0:
-                        # saver.save(sess, 'news-funnel')
-                        saver.save(sess, config.saver_path, global_step=counter)
-                        print "SAVED PARAMETERS"
-                    loss, _ = sess.run([loss_op, training_op])
-                    print "loss:", loss, "| counter:", counter
-            except tf.errors.OutOfRangeError:
-                print "end of epoch #", epoch, "..."
+        with coord.stop_on_exception():
+            while True:
+                counter += 1
+                if counter % 50 == 0:
+                    # saver.save(sess, 'news-funnel')
+                    saver.save(sess, config.saver_path, global_step=counter)
+                    print "SAVED PARAMETERS"
+                loss, _ = sess.run([loss_op, training_op])
+                print "loss:", loss, "| counter:", counter
 
 
 
