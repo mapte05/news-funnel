@@ -257,6 +257,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     train_summaries = load_data(config.train_title_file, config.max_train_articles)
     config.summary_length = summary_length = max([len(x) for x in train_summaries]) + 1
     train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
+    assert train_articles.shape[0] == train_summaries.shape[0]
     print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
     print "took {:.2f} seconds".format(time.time() - start)
 
@@ -273,31 +274,45 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     print "writing Config to file"
     write_config(config, config_file)
 
+    def load_example(sess, enqueue, coord):
+        while not coord.should_stop():
+            while True:
+                for i in xrange(train_articles.shape[0]):
+                    sess.run(enqueue, feed_dict={article_input: train_articles[i], summary_input: train_summaries[i]})
+        
     model = RushModel(embeddings, config)
-    article_batch, summary_batch =  tf.train.shuffle_batch([train_articles, train_summaries], 
+    queue = tf.FIFOQueue(
+        capacity=10000, 
+        min_after_dequeue=10,
+        dtypes=[tf.int32, tf.int32]
+    )
+    article_input = tf.placeholder(tf.int_32, config.article_length)
+    summary_input = tf.placeholder(tf.int_32, config.article_length)
+    enqueue = queue.enqueue([article_input, summary_input])
+    article_batch, summary_batch = queue.dequeue_many(config.batch_size) 
+    """
+    tf.train.shuffle_batch([train_articles, train_summaries], 
         batch_size=config.batch_size,
         num_threads=1,
         capacity=32
         min_after_dequeue=10,   # TODO make bigger during real stuff
         enqueue_many=True)
+    """
     loss_op = model.add_loss_op(article_batch, summary_batch)
     training_op = model.add_training_op(loss_op)
-            
+    
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
-
-    # from: http://stackoverflow.com/questions/34199233/how-to-prevent-tensorflow-from-allocating-the-totality-of-a-gpu-memory
-    #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.2)
-    #with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
     with tf.Session() as sess:
         sess.run(init)
+        tf.train.add_queue_runner(tf.train.QueueRunner(queue, [load_example])
+        tf.train.start_queue_runners(sess=sess)
         counter = 0
 
         print 80 * "="
         print "TRAINING"
         print 80 * "="
-        for epoch in range(config.n_epochs):
-            tf.train.start_queue_runners(sess=sess)
+        for epoch in range(config.n_epochs): # note: first epoch never ends
             try:
                 while True:
                     counter += 1
