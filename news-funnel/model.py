@@ -409,6 +409,6 @@ if __name__ == '__main__':
     if 'train' in sys.argv:
         train_main(debug=('debug' in sys.argv), reload_data=('reload' in sys.argv))
     elif 'test' in sys.argv:
-        test_main(debug=('debug' in sys.argv))
+        test_main(sys.argv[2], debug=('debug' in sys.argv))
     else:
         print >> sys.stderr, "please specify your model: \"train\" or \"test\""
