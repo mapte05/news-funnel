@@ -149,7 +149,7 @@ class RushModel:
         padded_context = tf.concat_v2([
             tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token), 
             summaries], 1)
-        for i in range(self.config.summary_length):
+        for i in xrange(self.config.summary_length):
             context = tf.slice(padded_context, [0, i], [-1, self.config.context_size])
             logits.append(self.do_prediction_step(articles, context))
         logits = tf.stack(logits, axis=1)
@@ -260,6 +260,9 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     if os.path.isfile(config.preprocessed_articles_file) and os.path.isfile(config.preprocessed_summaries_file):
         train_articles = np.load(config.preprocessed_articles_file)
         train_summaries = np.load(config.preprocessed_summaries_file)
+        
+        config.article_length = max([len(x) for x in train_articles]) + 1
+        config.summary_length = max([len(x) for x in train_summaries]) + 1
     else:
         start = time.time()
         train_articles = load_data(config.train_article_file, config.max_train_articles)
