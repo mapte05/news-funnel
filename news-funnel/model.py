@@ -8,6 +8,7 @@ testing: python model.py test param_file
 import tensorflow as tf
 import numpy as np
 import time
+import threading
 import pickle
 import sys
 import os
@@ -300,9 +301,9 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
 
     model = RushModel(embeddings, config)
     
-    queue = tf.FIFOQueue(10000, [tf.int32, tf.int32])
     article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
     summary_input = tf.placeholder(tf.int32, shape=(config.summary_length,))
+    queue = tf.RandomShuffleQueue(20000, 1000, [tf.int32, tf.int32], shapes=[(config.article_length,), (config.summary_length,)])
     enqueue = queue.enqueue([article_input, summary_input])
     article_batch, summary_batch = queue.dequeue_many(config.batch_size)
     """
@@ -323,7 +324,10 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     saver = tf.train.Saver()
     with tf.Session() as sess:
         sess.run(init)
-        tf.train.add_queue_runner(tf.train.QueueRunner(queue, [load_example]))
+        coord = tf.train.Coordinator()
+        threading.Thread(target=load_example, args=(sess, enqueue, coord)).start()
+        
+        #tf.train.add_queue_runner(tf.train.QueueRunner(queue, [load_example]))
         tf.train.start_queue_runners(sess=sess)
         counter = 0
 
