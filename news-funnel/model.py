@@ -12,6 +12,7 @@ import threading
 import pickle
 import sys
 import os
+import glob
 from utils.model_utils import load_embeddings, load_data, preprocess_data
 
 
@@ -243,7 +244,7 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file="config/config_file", debug=True, run_dev=False, reload_data=False):
+def train_main(config_file="config/config_file", debug=True, run_dev=False, reload_data=False): 
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
@@ -352,6 +353,9 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
     print >> sys.stderr,  80 * "="
     print >> sys.stderr, "INITIALIZING"
     print >> sys.stderr, 80 * "="
+    
+    assert len(glob.glob(param_file + "*")) > 0
+    
     config = None
     if load_config_from_file:
         config = load_config(config_file)
