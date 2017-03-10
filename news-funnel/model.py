@@ -49,18 +49,21 @@ class Config(object):
     unknown_token = None # set during preprocessing
 
     saver_path = 'variables/news-funnel-model'
-    train_article_file = './data/train/train.article.txt'
-    train_title_file = './data/train/train.title.txt'
-    #train_article_file = './data/train/valid.article.filter.txt' # for debug
-    #train_title_file = './data/train/valid.title.filter.txt' # for debug
+    #train_article_file = './data/train/train.article.txt'
+    #train_title_file = './data/train/train.title.txt'
+    #preprocessed_articles_file="preprocessed_articles_file.npy"
+    #preprocessed_summaries_file="preprocessed_summaries_file.npy"
+    
+    train_article_file = './data/train/valid.article.filter.txt' # for debug
+    train_title_file = './data/train/valid.title.filter.txt' # for debug
+    preprocessed_articles_file="preprocessed_articles_file_valid.npy"
+    preprocessed_summaries_file="preprocessed_summaries_file_valid.npy"
+    
     dev_article_file = './data/train/valid.article.filter.txt'
     dev_title_file = './data/train/valid.title.filter.txt'
     test_article_file = './data/giga/input.txt' # also need to test on duc2003/duc2004
     test_title_file = './data/giga/task1_ref0.txt'
     embedding_file = './data/glove.6B.50d.txt' #TODO: replace with 'glove.6B.200d.txt
-    
-    preprocessed_articles_file="preprocessed_articles_file.npy"
-    preprocessed_summaries_file="preprocessed_summaries_file.npy"
     
 
 class RushModel:
@@ -302,8 +305,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         while not coord.should_stop():
             while True:
                 for i in xrange(train_articles.shape[0]):
-                    #sess.run(enqueue, feed_dict={article_input: train_articles[i], summary_input: train_summaries[i]})
-                    return
+                    print i
+                    sess.run(enqueue, feed_dict={article_input: train_articles[i], summary_input: train_summaries[i]})
 
     model = RushModel(embeddings, config)
     
