@@ -3,6 +3,7 @@
 # news-funnel
 news-funnel/data
 news-funnel/variables
+news-funnel/*.npy
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
