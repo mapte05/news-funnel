@@ -48,8 +48,10 @@ class Config(object):
     null_token = None # set during preprocessing
 
     saver_path = 'variables/news-funnel-model'
-    train_article_file = './data/train/train.article.txt' # used to be valid.article.filter.txt
-    train_title_file = './data/train/train.title.txt' # used to be valid.title.filter.txt
+    #train_article_file = './data/train/train.article.txt'
+    #train_title_file = './data/train/train.title.txt'
+    train_article_file = './data/train/valid.article.filter.txt' # for debug
+    train_title_file = './data/train/train.title.txt' # for debug
     dev_article_file = './data/train/valid.article.filter.txt'
     dev_title_file = './data/train/valid.title.filter.txt'
     test_article_file = './data/giga/input.txt' # also need to test on duc2003/duc2004
@@ -405,11 +407,13 @@ if __name__ == '__main__':
     assert(1 < len(sys.argv) <= 4)
     debug = False
     if sys.argv[1] == "train":
-        if len(sys.argv) > 2 and sys.argv[2] == 'debug':
+        if 'debug' in sys.argv:
             debug = True
-        train_main(debug=debug)
+        if 'reload' in sys.argv:
+            reload = True
+        train_main(debug=debug, load_config_from_file=reload)
     elif sys.argv[1] == "test":
-        if len(sys.argv) > 3 and sys.argv[3] == 'debug':
+        if 'debug' in sys.argv:
             debug = True
         test_main(sys.argv[2], debug=debug)
     else:
