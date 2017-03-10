@@ -298,8 +298,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     model = RushModel(embeddings, config)
     
     queue = tf.FIFOQueue(10000, [tf.int32, tf.int32])
-    article_input = tf.placeholder(tf.int_32, config.article_length)
-    summary_input = tf.placeholder(tf.int_32, config.article_length)
+    article_input = tf.placeholder(tf.int32, shape(config.article_length,))
+    summary_input = tf.placeholder(tf.int32, shape(config.article_length,))
     enqueue = queue.enqueue([article_input, summary_input])
     article_batch, summary_batch = queue.dequeue_many(config.batch_size) 
     """
