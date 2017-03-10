@@ -66,7 +66,6 @@ class Config(object):
     dev_article_file = './data/train/valid.article.filter.txt'
     dev_title_file = './data/train/valid.title.filter.txt'
     test_article_file = './data/giga/input.txt' # also need to test on duc2003/duc2004
-    test_title_file = './data/giga/task1_ref0.txt'
     embedding_file = './data/glove.6B.50d.txt' #TODO: replace with 'glove.6B.200d.txt
     
 
@@ -317,15 +316,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     summary_input = tf.placeholder(tf.int32, shape=(config.summary_length,))
     queue = tf.RandomShuffleQueue(1024, 128, [tf.int32, tf.int32], shapes=[(config.article_length,), (config.summary_length,)])
     enqueue = queue.enqueue([article_input, summary_input])
+    
     article_batch, summary_batch = queue.dequeue_many(config.batch_size)
-    """
-    tf.train.shuffle_batch([train_articles, train_summaries], 
-        batch_size=config.batch_size,
-        num_threads=1,
-        capacity=32,
-        min_after_dequeue=10,
-        enqueue_many=True)
-    """
     article_batch = tf.reshape(article_batch, (config.batch_size, config.article_length)) # hacky
     summary_batch = tf.reshape(summary_batch, (config.batch_size, config.summary_length))
     
@@ -338,14 +330,12 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         sess.run(init)
         coord = tf.train.Coordinator()
         threading.Thread(target=load_example, args=(sess, enqueue, coord)).start()
-        
-        #tf.train.add_queue_runner(tf.train.QueueRunner(queue, [load_example]))
         tf.train.start_queue_runners(sess=sess)
-        counter = 0
 
         print 80 * "="
         print "TRAINING"
         print 80 * "="
+        counter = 0
         with coord.stop_on_exception():
             while True:
                 counter += 1
@@ -381,25 +371,36 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
     test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
+    def load_example(sess, enqueue, coord):
+        while not coord.should_stop():
+            for i in xrange(test_articles.shape[0]):
+                sess.run(enqueue, feed_dict={article_input: train_articles[i]})
+            while i % config.batch_size != 0:
+                sess.run(enqueue, feed_dict={article_input: train_articles[0]})
+                i += 1
+    
     model = RushModel(embeddings, config)
-    article_batch = tf.train.batch([test_articles],
-        batch_size=config.batch_size,
-        num_threads=1, 
-        enqueue_many=True)
-        #allow_smaller_final_batch=True)
+
+    article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
+    queue = tf.FIFOQueue(1024, [tf.int32], shapes=[(config.article_length,)])
+    enqueue = queue.enqueue([article_input])
+    
+    article_batch = queue.dequeue_many(config.batch_size)
+    article_batch = tf.reshape(article_batch, (config.batch_size, config.article_length)) # hacky
     predictions = model.predict(article_batch)
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
-        # new_saver = tf.train.import_meta_graph(param_file)
-        # new_saver.restore(sess, tf.train.latest_checkpoint('./'))
-        # all_vars = tf.get_collection('vars')
         saver.restore(sess, param_file)
+        coord = tf.train.Coordinator()
+        threading.Thread(target=load_example, args=(sess, enqueue, coord)).start()
+        tf.train.start_queue_runners(sess=sess)
+        
         print >> sys.stderr,  80 * "="
         print >> sys.stderr,  "TESTING"
         print >> sys.stderr,  80 * "="
-        tf.train.start_queue_runners(sess=sess)
-        try:
+        with coord.stop_on_exception():
+            i = 0
             while True:
                 summaries, = sess.run([predictions])
                 for summary in summaries.tolist():
@@ -408,8 +409,10 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
                             break
                         print id_to_token[id],
                     print ""
-        except tf.errors.OutOfRangeError:
-            pass
+                    i += 1
+                    
+                    if i >= test_articles.shape[0]:
+                        return
 
 
 
