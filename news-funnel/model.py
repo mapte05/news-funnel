@@ -46,8 +46,8 @@ class Config(object):
     null_token = None # set during preprocessing
 
     saver_path = 'variables/news-funnel-model'
-    train_article_file = './data/train/train.article.txt' # used to be valid.article.filter.txt
-    train_title_file = './data/train/train.title.txt' # used to be valid.title.filter.txt'
+    train_article_file = './data/train/valid.article.filter.txt' # used to be train.article.txt
+    train_title_file = './data/train/valid.title.filter.txt' # used to be train.title.txt
     dev_article_file = './data/train/valid.article.filter.txt'
     dev_title_file = './data/train/valid.title.filter.txt'
     test_article_file = './data/giga/input.txt' # also need to test on duc2003/duc2004
@@ -254,8 +254,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, load
 
 
     if load_preprocessed_from_file:
-        train_articles = numpy.load(preprocessed_articles_file)
-        train_summaries = numpy.load(preprocessed_summaries_file)
+        train_articles = np.load(preprocessed_articles_file)
+        train_summaries = np.load(preprocessed_summaries_file)
     else:
         print "Loading training data...",
         start = time.time()
@@ -269,8 +269,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, load
         print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
         print "took {:.2f} seconds".format(time.time() - start)
 
-        numpy.save(preprocessed_article_file, train_articles)
-        numpy.save(preprocessed_summaries_file, train_summaries)
+        np.save(preprocessed_article_file, train_articles)
+        np.save(preprocessed_summaries_file, train_summaries)
 
     if run_dev:
             print "Loading dev data...",
