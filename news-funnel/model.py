@@ -303,7 +303,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
             while True:
                 for i in xrange(train_articles.shape[0]):
                     sess.run(enqueue, feed_dict={article_input: train_articles[i], summary_input: train_summaries[i]})
-                    if x > 1000:
+                    if i > 1000:
                         return
 
     model = RushModel(embeddings, config)
