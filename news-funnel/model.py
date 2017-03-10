@@ -48,10 +48,10 @@ class Config(object):
     null_token = None # set during preprocessing
 
     saver_path = 'variables/news-funnel-model'
-    #train_article_file = './data/train/train.article.txt'
-    #train_title_file = './data/train/train.title.txt'
-    train_article_file = './data/train/valid.article.filter.txt' # for debug
-    train_title_file = './data/train/valid.title.filter.txt' # for debug
+    train_article_file = './data/train/train.article.txt'
+    train_title_file = './data/train/train.title.txt'
+    #train_article_file = './data/train/valid.article.filter.txt' # for debug
+    #train_title_file = './data/train/valid.title.filter.txt' # for debug
     dev_article_file = './data/train/valid.article.filter.txt'
     dev_title_file = './data/train/valid.title.filter.txt'
     test_article_file = './data/giga/input.txt' # also need to test on duc2003/duc2004
