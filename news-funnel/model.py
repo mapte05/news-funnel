@@ -320,7 +320,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False):
     saver = tf.train.Saver()
     with tf.Session() as sess:
         sess.run(init)
-        tf.train.add_queue_runner(tf.train.QueueRunner(queue, [load_example])
+        tf.train.add_queue_runner(tf.train.QueueRunner(queue, [load_example]))
         tf.train.start_queue_runners(sess=sess)
         counter = 0
 
