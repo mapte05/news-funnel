@@ -178,7 +178,6 @@ class RushModel:
             for i in range(self.config.summary_length):
                 context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
                 logits = self.do_prediction_step(articles, context, suppress_unknown=True)
-                logits = tf.scatter_nd()
                 padded_predictions = tf.concat_v2([padded_predictions, tf.expand_dims(tf.to_int32(tf.argmax(logits, axis=1)), -1)], 1)
             return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
         """
