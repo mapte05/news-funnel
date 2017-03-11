@@ -104,7 +104,7 @@ class RushModel:
             feed_dict[self.summaries_placeholder] = summaries_batch
         return feed_dict
     
-    def do_prediction_step(self, input, context):
+    def do_prediction_step(self, input, context, suppress_unknown=False):
         xavier_init = tf.contrib.layers.xavier_initializer()
         zero_init = tf.constant_initializer(0.0)
         embed_init = self.word2vec_embeddings
@@ -150,6 +150,9 @@ class RushModel:
             else:
                 raise Exception("encoding method invalid")
             
+            if suppress_unknown:
+                b2 = b2 - tf.one_hot([self.config.unknown_token], self.config.vocab_size, on_value=100000.)
+            
             h = tf.tanh(tf.matmul(embedded_context, U) + b1)
             logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
         
@@ -174,8 +177,8 @@ class RushModel:
             padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
             for i in range(self.config.summary_length):
                 context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
-                logits = self.do_prediction_step(articles, context)
-                #logits[:, config.unknown_token] = -1000000. # Ignore unknown
+                logits = self.do_prediction_step(articles, context, suppress_unknown=True)
+                logits = tf.scatter_nd()
                 padded_predictions = tf.concat_v2([padded_predictions, tf.expand_dims(tf.to_int32(tf.argmax(logits, axis=1)), -1)], 1)
             return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
         """
