@@ -40,6 +40,7 @@ class Config(object):
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
     encoding_method = "attention" # "attention" or "bag-of-words"
+    save_step = 1000
     
     max_vocab = 100000 # Nallapati 150k
     max_train_articles = None
@@ -347,7 +348,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         with coord.stop_on_exception():
             while True:
                 counter += 1
-                if counter % 50 == 0:
+                if counter % config.save_step == 0:
                     # saver.save(sess, 'news-funnel')
                     saver.save(sess, config.saver_path, global_step=counter)
                     print "SAVED PARAMETERS"
