@@ -395,8 +395,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         sess.run(init)
         coord = tf.train.Coordinator()
         threads = [
-            threading.Thread(target=load_train_example, args=(sess, enqueue, coord)),
-            threading.Thread(target=load_dev_example, args=(sess, enqueue, coord))
+            threading.Thread(target=load_train_example, args=(sess, train_enqueue, coord)),
+            threading.Thread(target=load_dev_example, args=(sess, dev_enqueue, coord))
         ]
         for thread in threads:
             thread.start()
