@@ -332,7 +332,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     def load_dev_example(sess, enqueue, coord):
         while True:
             for i in xrange(config.num_batches_for_testing * config.batch_size):
-                sess.run(enqueue, feed_dict={dev_article_input: dev_articles[i], dev_summary_input: train_summaries[i]})
+                sess.run(enqueue, feed_dict={dev_article_input: dev_articles[i], dev_summary_input: dev_summaries[i]})
                 if coord.should_stop():
                     return
 
