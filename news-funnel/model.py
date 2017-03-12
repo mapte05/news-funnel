@@ -424,7 +424,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
 
 
 
-def test_main(param_file, config_file="config/config_file", load_config_from_file=True, debug=False):
+def test_main(param_file, config_file="config/config_file", load_config_from_file=False, debug=False):
     print >> sys.stderr,  80 * "="
     print >> sys.stderr, "INITIALIZING"
     print >> sys.stderr, 80 * "="
