@@ -10,6 +10,7 @@ import numpy as np
 import time
 import threading
 import pickle
+import random
 import sys
 import os
 import glob
@@ -265,7 +266,7 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file="config/config_file", debug=True, run_dev=False, reload_data=False): 
+def train_main(config_file="config/config_file", debug=True, reload_data=False): 
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
@@ -329,7 +330,9 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
 
     def load_train_example(sess, enqueue, coord):
         while True:
-            for i in xrange(train_articles.shape[0]):
+            shuffled = range(train_articles.shape[0])
+            random.shuffle(shuffled)
+            for i in shuffled:
                 sess.run(enqueue, feed_dict={train_article_input: train_articles[i], train_summary_input: train_summaries[i]})
                 if coord.should_stop():
                     return
@@ -346,7 +349,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     # Define training pipeline
     train_article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
     train_summary_input = tf.placeholder(tf.int32, shape=(config.summary_length,))
-    train_queue = tf.RandomShuffleQueue(1024, 128, [tf.int32, tf.int32], shapes=[(config.article_length,), (config.summary_length,)])
+    train_queue = tf.FIFOQueue(1024, [tf.int32, tf.int32], shapes=[(config.article_length,), (config.summary_length,)])
     train_enqueue = train_queue.enqueue([train_article_input, train_summary_input])
     
     train_article_batch, train_summary_batch = train_queue.dequeue_many(config.batch_size)
@@ -422,16 +425,15 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
                 print "10 minibatches took {:.2f} seconds".format(time.time() - start)
 
             if counter % config.param_save_step == 0:
-                saver.save(sess, config.saver_path, global_step=counter)
                 test_loss = test_lite(sess, counter)
                 print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
 
                 # Save best model
                 if test_loss < best_loss:
                     best_loss = test_loss
-                    best_files = glob.glob(saver_path + '*')
-                    for f in best_files:
-                        shutil.copyfile(f, saver_path + 'best' + f.split('.')[1])
+                    saver.save(sess, config.saver_path, global_step=counter)
+
+                print 'ops: ', len(tf.get_default_graph().get_operations())
 
             loss, _ = sess.run([train_loss_op, training_op])
             lf.write(str(counter)+','+str(loss)+'\n')
