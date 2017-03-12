@@ -40,7 +40,7 @@ class Config(object):
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
     encoding_method = "attention" # "attention" or "bag-of-words"
-    param_save_step = 30
+    param_save_step = 11
     
     max_vocab = 75000 # Nallapati 150k
     max_train_articles = None
@@ -386,7 +386,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
                     testf.write(' '.join(word for word in line)+'\n')
             mean_loss = loss_sum / config.num_batches_for_testing
             grad_norm, lr = sess.run([grad_norm_op, lr_op])
-            tlossf.write(','.join([mean_loss, grad_norm, lr]) + '\n')
+            tlossf.write(','.join([str(mean_loss), str(grad_norm), str(lr)]) + '\n')
             tlossf.flush()
 
 
