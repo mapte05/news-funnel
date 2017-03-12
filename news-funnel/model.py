@@ -425,11 +425,11 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False):
                 if test_loss < best_loss:
                     best_loss = test_loss
                     saver.save(sess, config.saver_path, global_step=counter)
-                
-                size = 0
-                for v in tf.all_variables():
-                    size += np.prod(v.get_shape().as_list())
-                print "total size:", size
+            
+            size = 0
+            for v in tf.all_variables():
+                size += np.prod(v.get_shape().as_list())
+            print "total size:", size
 
             loss, _ = sess.run([train_loss_op, training_op])
             lf.write(str(counter)+','+str(loss)+'\n')
