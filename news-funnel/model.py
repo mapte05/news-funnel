@@ -407,19 +407,19 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         print "TRAINING"
         print 80 * "="
         counter = 0
-        with coord.stop_on_exception():
-            start = time.time()
-            while True:
-                counter += 1
-                if counter % 10 == 0:
-                    print "10 minibatches took {:.2f} seconds".format(time.time() - start)
+        #with coord.stop_on_exception():
+        start = time.time()
+        while True:
+            counter += 1
+            if counter % 10 == 0:
+                print "10 minibatches took {:.2f} seconds".format(time.time() - start)
 
-                if counter % config.param_save_step == 0:
-                    saver.save(sess, config.saver_path, global_step=counter)
-                    test_lite(sess, counter)
-                    print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
-                loss, _ = sess.run([train_loss_op, training_op])
-                lf.write(loss+'\n')
+            if counter % config.param_save_step == 0:
+                saver.save(sess, config.saver_path, global_step=counter)
+                test_lite(sess, counter)
+                print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
+            loss, _ = sess.run([train_loss_op, training_op])
+            lf.write(loss+'\n')
                 
 
 
