@@ -355,7 +355,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     train_summary_batch = tf.reshape(train_summary_batch, (config.batch_size, config.summary_length))
     
     train_loss_op = model.add_loss_op(train_article_batch, train_summary_batch)
-    training_op = model.add_training_op(loss_op)
+    training_op = model.add_training_op(train_loss_op)
 
     # Define testing pipeline
     dev_article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
