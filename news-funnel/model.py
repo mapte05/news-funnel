@@ -383,7 +383,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
                         if id == config.end_token:
                             break
                         line.append(id_to_token[id])
-                    testf.write(' '.join(word for word in word_list)+'\n')
+                    testf.write(' '.join(word for word in line)+'\n')
             mean_loss = loss_sum / config.num_batches_for_testing
             grad_norm, lr = sess.run([grad_norm_op, lr_op])
             tlossf.write(','.join([mean_loss, grad_norm, lr]) + '\n')
