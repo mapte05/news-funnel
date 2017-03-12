@@ -61,6 +61,10 @@ class Config(object):
     train_title_file = './data/train/train.title.txt'
     preprocessed_articles_file="preprocessed_articles_file.npy"
     preprocessed_summaries_file="preprocessed_summaries_file.npy"
+
+    train_loss_file = "eval/train_losses"
+    test_loss_file_root = "eval/test_losses"
+    test_results_file_root = "eval/giga_system"
     
     #train_article_file = './data/train/valid.article.filter.txt' # for debug
     #train_title_file = './data/train/valid.title.filter.txt' # for debug
@@ -256,7 +260,7 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file="config/config_file", debug=True, run_dev=False, reload_data=False, loss_file="train_losses", test_results_file_root="giga_system", test_loss_file_root="test_losses"): 
+def train_main(config_file="config/config_file", debug=True, run_dev=False, reload_data=False): 
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
@@ -367,8 +371,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
 
 
     def test_lite(sess, count):
-        testf = open(test_results_file_root+count, 'r+')
-        tlossf = open(test_loss_file_root+count, 'r+')
+        testf = open(config.test_results_file_root+count, 'r+')
+        tlossf = open(config.test_loss_file_root+count, 'r+')
         loss_sum = 0.
         for i in xrange(config.num_batches_for_testing):
             summaries, loss = sess.run([predictions, dev_loss_op])
@@ -386,7 +390,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         tlossf.write(','.join([mean_loss, grad_norm, lr]) + '\n')
 
 
-    lf = open(loss_file, 'r+')
+    lf = open(config.train_loss_file, 'r+')
     with tf.Session() as sess:
         sess.run(init)
         coord = tf.train.Coordinator()
