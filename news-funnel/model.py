@@ -372,22 +372,21 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     tlossf = open(config.test_loss_file, 'w+')
 
     def test_lite(sess, count):
-        testf = open(config.test_results_file_root+str(count), 'w+')
-        loss_sum = 0.
-        for i in xrange(config.num_batches_for_testing):
-            summaries, loss = sess.run([predictions, dev_loss_op])
-            loss_sum += loss
-            for summary in summaries.tolist():
-                line = []
-                for id in summary:
-                    if id == config.end_token:
-                        break
-                    line.append(id_to_token[id])
-                i += 1
-                testf.write(' '.join(word for word in word_list)+'\n')
-        mean_loss = loss_sum / config.num_batches_for_testing
-        grad_norm, lr = sess.run([grad_norm_op, lr_op])
-        tlossf.write(','.join([mean_loss, grad_norm, lr]) + '\n')
+        with open(config.test_results_file_root+str(count), 'w+') as testf:
+            loss_sum = 0.
+            for i in xrange(config.num_batches_for_testing):
+                summaries, loss = sess.run([predictions, dev_loss_op])
+                loss_sum += loss
+                for summary in summaries.tolist():
+                    line = []
+                    for id in summary:
+                        if id == config.end_token:
+                            break
+                        line.append(id_to_token[id])
+                    testf.write(' '.join(word for word in word_list)+'\n')
+            mean_loss = loss_sum / config.num_batches_for_testing
+            grad_norm, lr = sess.run([grad_norm_op, lr_op])
+            tlossf.write(','.join([mean_loss, grad_norm, lr]) + '\n')
 
 
     lf = open(config.train_loss_file, 'w+')
@@ -398,7 +397,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         coord = tf.train.Coordinator()
         threads = [
             threading.Thread(target=load_train_example, args=(sess, train_enqueue, coord)),
-            #threading.Thread(target=load_dev_example, args=(sess, dev_enqueue, coord))
+            threading.Thread(target=load_dev_example, args=(sess, dev_enqueue, coord))
         ]
         for thread in threads:
             thread.start()
