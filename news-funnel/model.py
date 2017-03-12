@@ -63,7 +63,7 @@ class Config(object):
     preprocessed_summaries_file="preprocessed_summaries_file.npy"
 
     train_loss_file = "eval/train_losses"
-    test_loss_file_root = "eval/test_losses"
+    test_loss_file = "eval/test_losses"
     test_results_file_root = "eval/giga_system"
     
     #train_article_file = './data/train/valid.article.filter.txt' # for debug
@@ -369,7 +369,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     saver = tf.train.Saver()
     loss = None
 
-    tlossf = open(config.test_loss_file_root+count, 'w+')
+    tlossf = open(config.test_loss_file, 'w+')
 
     def test_lite(sess, count):
         testf = open(config.test_results_file_root+count, 'w+')
