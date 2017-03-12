@@ -54,7 +54,7 @@ class Config(object):
     null_token = None # set during preprocessing
     unknown_token = None # set during preprocessing
 
-    num_batches_for_testing = 5
+    num_batches_for_testing = 1
 
     saver_path = 'variables/news-funnel-model'
     train_article_file = './data/train/train.article.txt'
@@ -239,22 +239,12 @@ class RushModel:
         """
         global_step = tf.Variable(0, trainable=False)
         learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
-        return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
-        
-
-    def create_gradient_op(self, loss):
-        """Sets up the training Ops.
-        Args:
-            loss: Loss tensor, from cross_entropy_loss.
-        Returns:
-            train_op: The Op for training.
-        """
-        global_step = tf.Variable(0, trainable=False)
-        learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-        grads = optimizer.compute_gradients(loss)
-        return tf.global_norm(grads)
 
+        training_op = optimizer.minimize(loss, global_step=global_step)
+        grads, vars = zip(*optimizer.compute_gradients(loss))
+
+        return training_op, tf.global_norm(grads), learning_rate
 
 def write_config(config, config_file):
     with open(config_file, 'wb') as outf:
@@ -355,7 +345,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     train_summary_batch = tf.reshape(train_summary_batch, (config.batch_size, config.summary_length))
     
     train_loss_op = model.add_loss_op(train_article_batch, train_summary_batch)
-    training_op = model.add_training_op(train_loss_op)
+    training_op, grad_norm_op, lr_op = model.add_training_op(train_loss_op)
 
     # Define testing pipeline
     dev_article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
@@ -369,8 +359,6 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     
     dev_loss_op = model.add_loss_op(dev_article_batch, dev_summary_batch)
     predictions = model.predict(dev_article_batch)
-
-    grad_norm_op = model.create_gradient_op(train_loss_op)
 
     
     init = tf.global_variables_initializer()
@@ -394,9 +382,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
                 i += 1
                 testf.write(' '.join(word for word in word_list)+'\n')
         mean_loss = loss_sum / config.num_batches_for_testing
-        tlossf.write(mean_loss)
-        grad_norm = sess.run(grad_norm_op)
-        tlossf.write(','+grad_norm+'\n')
+        grad_norm, lr = sess.run([grad_norm_op, lr_op])
+        tlossf.write(','.join([mean_loss, grad_norm, lr]) + '\n')
 
 
     lf = open(loss_file, 'r+')
