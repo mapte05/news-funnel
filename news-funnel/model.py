@@ -363,7 +363,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     dev_queue = tf.FIFOQueue(1024, [tf.int32], shapes=[(config.article_length,)])
     dev_enqueue = dev_queue.enqueue([dev_article_input, dev_summary_input])
     
-    dev_article_batch, dev_summary_batch = queue.dequeue_many(config.batch_size)
+    dev_article_batch, dev_summary_batch = dev_queue.dequeue_many(config.batch_size)
     dev_article_batch = tf.reshape(dev_article_batch, (config.batch_size, config.article_length)) # hacky
     dev_summary_batch = tf.reshape(dev_summary_batch, (config.batch_size, config.summary_length))
     
