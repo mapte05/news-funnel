@@ -325,7 +325,9 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False):
 
     def load_train_example(sess, enqueue, coord):
         while True:
-            for i in xrange(train_articles.shape[0]):
+            shuffled = range(train_articles.shape[0])
+            random.shuffle(shuffled)
+            for i in shuffled:
                 sess.run(enqueue, feed_dict={train_article_input: train_articles[i], train_summary_input: train_summaries[i]})
                 if coord.should_stop():
                     return
@@ -342,7 +344,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False):
     # Define training pipeline
     train_article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
     train_summary_input = tf.placeholder(tf.int32, shape=(config.summary_length,))
-    train_queue = tf.RandomShuffleQueue(1024, 128, [tf.int32, tf.int32], shapes=[(config.article_length,), (config.summary_length,)])
+    train_queue = tf.FIFOQueue(1024, [tf.int32, tf.int32], shapes=[(config.article_length,), (config.summary_length,)])
     train_enqueue = train_queue.enqueue([train_article_input, train_summary_input])
     
     train_article_batch, train_summary_batch = train_queue.dequeue_many(config.batch_size)
