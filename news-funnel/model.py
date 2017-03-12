@@ -46,6 +46,7 @@ class Config(object):
     
     max_vocab = 75000 # Nallapati 150k
     max_train_articles = None
+    max_grad_norm = 5
     
     # Limits for memory conserve
     max_summary_length = 12 #26
@@ -247,10 +248,13 @@ class RushModel:
         learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 
-        training_op = optimizer.minimize(loss, global_step=global_step)
+        #train_op = optimizer.minimize(loss, global_step=global_step)
         grads, vars = zip(*optimizer.compute_gradients(loss))
 
-        return training_op, tf.global_norm(grads), learning_rate
+        grads, _ = tf.clip_by_global_norm(grads, self.config.max_grad_norm)
+        train_op = optimizer.apply_gradients(zip(grads, vars), global_step=global_step)
+
+        return train_op, tf.global_norm(grads), learning_rate
 
 def write_config(config, config_file):
     with open(config_file, 'wb') as outf:
