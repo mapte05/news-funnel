@@ -177,7 +177,7 @@ class RushModel:
         
         null_mask = tf.not_equal(summaries, self.config.null_token)
         cross_entropy_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries)
-        return tf.reduce_sum(tf.boolean_mask(cross_entropy_loss, null_mask))
+        return tf.reduce_mean(tf.boolean_mask(cross_entropy_loss, null_mask))
         
     def predict(self, articles, method="greedy"):
         if method == "greedy":
