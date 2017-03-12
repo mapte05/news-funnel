@@ -260,7 +260,7 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file="config/config_file", debug=True, run_dev=False, reload_data=False): 
+def train_main(config_file="config/config_file", debug=True, reload_data=False): 
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
