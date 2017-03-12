@@ -13,6 +13,7 @@ import pickle
 import sys
 import os
 import glob
+import shutil
 from utils.model_utils import load_embeddings, load_data, preprocess_data
 
 
@@ -40,7 +41,7 @@ class Config(object):
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
     encoding_method = "attention" # "attention" or "bag-of-words"
-    param_save_step = 1000
+    param_save_step = 11
     
     max_vocab = 75000 # Nallapati 150k
     max_train_articles = None
@@ -63,7 +64,7 @@ class Config(object):
     preprocessed_summaries_file="preprocessed_summaries_file.npy"
 
     train_loss_file = "eval/train_losses"
-    test_loss_file_root = "eval/test_losses"
+    test_loss_file = "eval/test_losses"
     test_results_file_root = "eval/giga_system"
     
     #train_article_file = './data/train/valid.article.filter.txt' # for debug
@@ -369,25 +370,26 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False):
     saver = tf.train.Saver()
     loss = None
 
+    tlossf = open(config.test_loss_file, 'w+')
 
     def test_lite(sess, count):
-        testf = open(config.test_results_file_root+count, 'w+')
-        tlossf = open(config.test_loss_file_root+count, 'w+')
-        loss_sum = 0.
-        for i in xrange(config.num_batches_for_testing):
-            summaries, loss = sess.run([predictions, dev_loss_op])
-            loss_sum += loss
-            for summary in summaries.tolist():
-                line = []
-                for id in summary:
-                    if id == config.end_token:
-                        break
-                    line.append(id_to_token[id])
-                i += 1
-                testf.write(' '.join(word for word in word_list)+'\n')
-        mean_loss = loss_sum / config.num_batches_for_testing
-        grad_norm, lr = sess.run([grad_norm_op, lr_op])
-        tlossf.write(','.join([mean_loss, grad_norm, lr]) + '\n')
+        with open(config.test_results_file_root+str(count), 'w+') as testf:
+            loss_sum = 0.
+            for i in xrange(config.num_batches_for_testing):
+                summaries, loss = sess.run([predictions, dev_loss_op])
+                loss_sum += loss
+                for summary in summaries.tolist():
+                    line = []
+                    for id in summary:
+                        if id == config.end_token:
+                            break
+                        line.append(id_to_token[id])
+                    testf.write(' '.join(word for word in line)+'\n')
+            mean_loss = loss_sum / config.num_batches_for_testing
+            grad_norm, lr = sess.run([grad_norm_op, lr_op])
+            tlossf.write(','.join([str(count), str(mean_loss), str(grad_norm), str(lr)]) + '\n')
+            tlossf.flush()
+        return loss_sum
 
 
     lf = open(config.train_loss_file, 'w+')
@@ -407,19 +409,29 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False):
         print "TRAINING"
         print 80 * "="
         counter = 0
-        with coord.stop_on_exception():
-            start = time.time()
-            while True:
-                counter += 1
-                if counter % 10 == 0:
-                    print "10 minibatches took {:.2f} seconds".format(time.time() - start)
+        best_loss = float('inf')
+        # with coord.stop_on_exception():
+        start = time.time()
+        while True:
+            counter += 1
+            if counter % 10 == 0:
+                print "10 minibatches took {:.2f} seconds".format(time.time() - start)
 
-                if counter % config.param_save_step == 0:
-                    saver.save(sess, config.saver_path, global_step=counter)
-                    test_lite(sess, counter/config.save_step)
-                    print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
-                loss, _ = sess.run([loss_op, training_op])
-                lf.write(loss+'\n')
+            if counter % config.param_save_step == 0:
+                saver.save(sess, config.saver_path, global_step=counter)
+                test_loss = test_lite(sess, counter)
+                print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
+
+                # Save best model
+                if test_loss < best_loss:
+                    best_loss = test_loss
+                    best_files = glob.glob(saver_path + '*')
+                    for f in best_files:
+                        shutil.copyfile(f, saver_path + 'best' + f.split('.')[1])
+
+            loss, _ = sess.run([train_loss_op, training_op])
+            lf.write(str(counter)+','+str(loss)+'\n')
+            lf.flush()
                 
 
 
