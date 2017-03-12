@@ -40,7 +40,7 @@ class Config(object):
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
     encoding_method = "attention" # "attention" or "bag-of-words"
-    save_step = 1000
+    param_save_step = 1000
     
     max_vocab = 100000 # Nallapati 150k
     max_train_articles = None
@@ -349,7 +349,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     train_queue = tf.RandomShuffleQueue(1024, 128, [tf.int32, tf.int32], shapes=[(config.article_length,), (config.summary_length,)])
     train_enqueue = train_queue.enqueue([train_article_input, train_summary_input])
     
-    train_article_batch, train_summary_batch = queue.dequeue_many(config.batch_size)
+    train_article_batch, train_summary_batch = train_queue.dequeue_many(config.batch_size)
     train_article_batch = tf.reshape(train_article_batch, (config.batch_size, config.article_length)) # hacky
     train_summary_batch = tf.reshape(train_summary_batch, (config.batch_size, config.summary_length))
     
@@ -417,7 +417,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         with coord.stop_on_exception():
             while True:
                 counter += 1
-                if counter % config.save_step == 0:
+                if counter % config.param_save_step == 0:
                     saver.save(sess, config.saver_path, global_step=counter)
                     test_lite(sess, counter/config.save_step)
                     print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
