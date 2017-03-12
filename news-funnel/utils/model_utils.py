@@ -21,7 +21,7 @@ def minibatches(data, batch_size):
 '''
 load word embeddings
 '''
-def load_embeddings(embedding_file, num_vocab=None, normalize=lambda token: token.lower()):
+def load_embeddings(embedding_file, num_vocab=None, normalize=lambda token: token.lower() if token != "UNK" else "<unk>"):
     embedding_dimension = None
     for line in open(embedding_file).readlines():
         embedding_dimension = len(line.strip().split()) - 1
