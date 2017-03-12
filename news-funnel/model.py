@@ -372,7 +372,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     tlossf = open(config.test_loss_file, 'w+')
 
     def test_lite(sess, count):
-        testf = open(config.test_results_file_root+count, 'w+')
+        testf = open(config.test_results_file_root+str(count), 'w+')
         loss_sum = 0.
         for i in xrange(config.num_batches_for_testing):
             summaries, loss = sess.run([predictions, dev_loss_op])
