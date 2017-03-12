@@ -393,6 +393,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     lf = open(config.train_loss_file, 'w+')
     with tf.Session() as sess:
         sess.run(init)
+        tf.train.start_queue_runners(sess=sess)
+        
         coord = tf.train.Coordinator()
         threads = [
             threading.Thread(target=load_train_example, args=(sess, train_enqueue, coord)),
@@ -400,7 +402,6 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         ]
         for thread in threads:
             thread.start()
-        tf.train.start_queue_runners(sess=sess)
 
         print 80 * "="
         print "TRAINING"
