@@ -419,7 +419,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
                 test_lite(sess, counter)
                 print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
             loss, _ = sess.run([train_loss_op, training_op])
-            lf.write(loss+'\n')
+            lf.write(str(loss)+'\n')
                 
 
 
