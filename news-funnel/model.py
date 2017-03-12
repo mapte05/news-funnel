@@ -429,7 +429,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False):
                     best_loss = test_loss
                     saver.save(sess, config.saver_path, global_step=counter)
 
-                print 'ops: ' + len(tf.get_default_graph().get_operations())
+                print 'ops: ', len(tf.get_default_graph().get_operations())
 
             loss, _ = sess.run([train_loss_op, training_op])
             lf.write(str(counter)+','+str(loss)+'\n')
