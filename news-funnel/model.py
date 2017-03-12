@@ -30,7 +30,7 @@ class Config(object):
     article_length = None # set during preprocessing
     embed_size = None # set during preprocessing (Rush: D = 200)
     hidden_size = 400 # taken from Rush (H)
-    batch_size = 512 # Rush uses 64
+    batch_size = 256 # Rush uses 64
     n_epochs = 15 # taken from Rush
     #n_layers = 3 # taken from Rush (L)
     lr = 0.005 # taken from Rush
