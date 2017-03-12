@@ -322,7 +322,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     print "writing Config to file"
     write_config(config, config_file)
 
-    def load_training_example(sess, enqueue, coord):
+    def load_train_example(sess, enqueue, coord):
         while True:
             for i in xrange(train_articles.shape[0]):
                 sess.run(enqueue, feed_dict={train_article_input: train_articles[i], train_summary_input: train_summaries[i]})
@@ -332,7 +332,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     def load_dev_example(sess, enqueue, coord):
         while True:
             for i in xrange(config.num_batches_for_testing * config.batch_size):
-                sess.run(enqueue, feed_dict={dev_article_input: dev_articles[i], dev_summary_input: train_summaries[i]})
+                sess.run(enqueue, feed_dict={dev_article_input: dev_articles[i], dev_summary_input: dev_summaries[i]})
                 if coord.should_stop():
                     return
 
@@ -371,8 +371,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
 
 
     def test_lite(sess, count):
-        testf = open(config.test_results_file_root+count, 'r+')
-        tlossf = open(config.test_loss_file_root+count, 'r+')
+        testf = open(config.test_results_file_root+count, 'w+')
+        tlossf = open(config.test_loss_file_root+count, 'w+')
         loss_sum = 0.
         for i in xrange(config.num_batches_for_testing):
             summaries, loss = sess.run([predictions, dev_loss_op])
@@ -390,15 +390,15 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         tlossf.write(','.join([mean_loss, grad_norm, lr]) + '\n')
 
 
-    lf = open(config.train_loss_file, 'r+')
+    lf = open(config.train_loss_file, 'w+')
     with tf.Session() as sess:
         sess.run(init)
         tf.train.start_queue_runners(sess=sess)
         
         coord = tf.train.Coordinator()
         threads = [
-            threading.Thread(target=load_train_example, args=(sess, enqueue, coord)),
-            threading.Thread(target=load_dev_example, args=(sess, enqueue, coord))
+            threading.Thread(target=load_train_example, args=(sess, train_enqueue, coord)),
+            threading.Thread(target=load_dev_example, args=(sess, dev_enqueue, coord))
         ]
         for thread in threads:
             thread.start()
