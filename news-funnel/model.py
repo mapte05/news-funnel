@@ -13,6 +13,7 @@ import pickle
 import sys
 import os
 import glob
+import shutil
 from utils.model_utils import load_embeddings, load_data, preprocess_data
 
 
@@ -388,6 +389,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
             grad_norm, lr = sess.run([grad_norm_op, lr_op])
             tlossf.write(','.join([str(count), str(mean_loss), str(grad_norm), str(lr)]) + '\n')
             tlossf.flush()
+        return loss_sum
 
 
     lf = open(config.train_loss_file, 'w+')
@@ -407,6 +409,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         print "TRAINING"
         print 80 * "="
         counter = 0
+        best_loss = float('inf')
         # with coord.stop_on_exception():
         start = time.time()
         while True:
@@ -416,8 +419,16 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
 
             if counter % config.param_save_step == 0:
                 saver.save(sess, config.saver_path, global_step=counter)
-                test_lite(sess, counter)
+                test_loss = test_lite(sess, counter)
                 print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
+
+                # Save best model
+                if test_loss < best_loss:
+                    best_loss = test_loss
+                    best_files = glob.glob(saver_path + '*')
+                    for f in best_files:
+                        shutil.copyfile(f, saver_path + 'best' + f.split('.')[1])
+
             loss, _ = sess.run([train_loss_op, training_op])
             lf.write(str(counter)+','+str(loss)+'\n')
             lf.flush()
