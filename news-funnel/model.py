@@ -418,7 +418,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False):
                 print "10 minibatches took {:.2f} seconds".format(time.time() - start)
 
             if counter % config.param_save_step == 0:
-                test_loss = loss#test_lite(sess, counter)
+                test_loss = test_lite(sess, counter)
                 print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
 
                 # Save best model
