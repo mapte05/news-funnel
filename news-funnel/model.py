@@ -54,6 +54,8 @@ class Config(object):
     null_token = None # set during preprocessing
     unknown_token = None # set during preprocessing
 
+    num_batches_for_testing = 5
+
     saver_path = 'variables/news-funnel-model'
     train_article_file = './data/train/train.article.txt'
     train_title_file = './data/train/train.title.txt'
@@ -240,6 +242,19 @@ class RushModel:
         return tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, global_step=global_step)
         
 
+    def create_gradient_op(self, loss):
+        """Sets up the training Ops.
+        Args:
+            loss: Loss tensor, from cross_entropy_loss.
+        Returns:
+            train_op: The Op for training.
+        """
+        global_step = tf.Variable(0, trainable=False)
+        learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
+        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        grads = optimizer.compute_gradients(loss)
+        return tf.global_norm(grads)
+
 
 def write_config(config, config_file):
     with open(config_file, 'wb') as outf:
@@ -251,7 +266,7 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file="config/config_file", debug=True, run_dev=False, reload_data=False): 
+def train_main(config_file="config/config_file", debug=True, run_dev=False, reload_data=False, loss_file="train_losses", test_results_file_root="giga_system", test_loss_file_root="test_losses"): 
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
@@ -299,46 +314,100 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
     print "took {:.2f} seconds".format(time.time() - start)
 
-    if run_dev:
-        print "Loading dev data...",
-        start = time.time()
-        dev_articles = load_data(config.dev_article_file)
-        dev_articles = preprocess_data(dev_articles, token_to_id, config.article_length)
-        
-        dev_summaries = load_data(config.dev_title_file)
-        dev_summaries = preprocess_data(dev_summaries, token_to_id, config.summary_length)
-        print "took {:.2f} seconds".format(time.time() - start)
+    print "Loading dev data...",
+    start = time.time()
+    dev_articles = load_data(config.dev_article_file, config.num_batches_for_testing * config.batch_size)
+    dev_articles = preprocess_data(dev_articles, token_to_id, config.article_length)
+    
+    dev_summaries = load_data(config.dev_title_file, config.num_batches_for_testing * config.batch_size)
+    dev_summaries = preprocess_data(dev_summaries, token_to_id, config.summary_length)
+    print "took {:.2f} seconds".format(time.time() - start)
+
 
     print "writing Config to file"
     write_config(config, config_file)
 
-    def load_example(sess, enqueue, coord):
+    def load_training_example(sess, enqueue, coord):
         while True:
             for i in xrange(train_articles.shape[0]):
-                sess.run(enqueue, feed_dict={article_input: train_articles[i], summary_input: train_summaries[i]})
+                sess.run(enqueue, feed_dict={train_article_input: train_articles[i], train_summary_input: train_summaries[i]})
+                if coord.should_stop():
+                    return
+
+    def load_dev_example(sess, enqueue, coord):
+        while True:
+            for i in xrange(config.num_batches_for_testing * config.batch_size):
+                sess.run(enqueue, feed_dict={dev_article_input: dev_articles[i], dev_summary_input: train_summaries[i]})
                 if coord.should_stop():
                     return
 
     model = RushModel(embeddings, config)
     
-    article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
-    summary_input = tf.placeholder(tf.int32, shape=(config.summary_length,))
-    queue = tf.RandomShuffleQueue(1024, 128, [tf.int32, tf.int32], shapes=[(config.article_length,), (config.summary_length,)])
-    enqueue = queue.enqueue([article_input, summary_input])
+    # Define training pipeline
+    train_article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
+    train_summary_input = tf.placeholder(tf.int32, shape=(config.summary_length,))
+    train_queue = tf.RandomShuffleQueue(1024, 128, [tf.int32, tf.int32], shapes=[(config.article_length,), (config.summary_length,)])
+    train_enqueue = train_queue.enqueue([train_article_input, train_summary_input])
     
-    article_batch, summary_batch = queue.dequeue_many(config.batch_size)
-    article_batch = tf.reshape(article_batch, (config.batch_size, config.article_length)) # hacky
-    summary_batch = tf.reshape(summary_batch, (config.batch_size, config.summary_length))
+    train_article_batch, train_summary_batch = queue.dequeue_many(config.batch_size)
+    train_article_batch = tf.reshape(train_article_batch, (config.batch_size, config.article_length)) # hacky
+    train_summary_batch = tf.reshape(train_summary_batch, (config.batch_size, config.summary_length))
     
-    loss_op = model.add_loss_op(article_batch, summary_batch)
+    train_loss_op = model.add_loss_op(train_article_batch, train_summary_batch)
     training_op = model.add_training_op(loss_op)
+
+    # Define testing pipeline
+    dev_article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
+    dev_summary_input = tf.placeholder(tf.int32, shape=(config.summary_length,))
+    dev_queue = tf.FIFOQueue(1024, [tf.int32], shapes=[(config.article_length,)])
+    dev_enqueue = dev_queue.enqueue([dev_article_input, dev_summary_input])
+    
+    dev_article_batch, dev_summary_batch = queue.dequeue_many(config.batch_size)
+    dev_article_batch = tf.reshape(dev_article_batch, (config.batch_size, config.article_length)) # hacky)
+    dev_summary_batch = tf.reshape(dev_summary_batch, (config.batch_size, config.summary_length))
+    
+    dev_loss_op = model.add_loss_op(dev_article_batch, dev_summary_batch)
+    predictions = model.predict(dev_article_batch)
+
+    grad_norm_op = model.create_gradient_op(train_loss_op)
+
     
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
+    loss = None
+
+
+    def test_lite(sess, count):
+        testf = open(test_results_file_root+count, 'r+')
+        tlossf = open(test_loss_file_root+count, 'r+')
+        loss_sum = 0.
+        for i in xrange(config.num_batches_for_testing):
+            summaries, loss = sess.run([predictions, dev_loss_op])
+            loss_sum += loss
+            for summary in summaries.tolist():
+                line = []
+                for id in summary:
+                    if id == config.end_token:
+                        break
+                    line.append(id_to_token[id])
+                i += 1
+                testf.write(' '.join(word for word in word_list)+'\n')
+        mean_loss = loss_sum / config.num_batches_for_testing
+        tlossf.write(mean_loss)
+        grad_norm = sess.run(grad_norm_op)
+        tlossf.write(','+grad_norm+'\n')
+
+
+    lf = open(loss_file, 'r+')
     with tf.Session() as sess:
         sess.run(init)
         coord = tf.train.Coordinator()
-        threading.Thread(target=load_example, args=(sess, enqueue, coord)).start()
+        threads = [
+            threading.Thread(target=load_train_example, args=(sess, enqueue, coord)),
+            threading.Thread(target=load_dev_example, args=(sess, enqueue, coord))
+        ]
+        for thread in threads:
+            thread.start()
         tf.train.start_queue_runners(sess=sess)
 
         print 80 * "="
@@ -349,11 +418,12 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
             while True:
                 counter += 1
                 if counter % config.save_step == 0:
-                    # saver.save(sess, 'news-funnel')
                     saver.save(sess, config.saver_path, global_step=counter)
-                    print "SAVED PARAMETERS"
+                    test_lite(sess, counter/config.save_step)
+                    print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
                 loss, _ = sess.run([loss_op, training_op])
-                print "loss:", loss, "| counter:", counter
+                lf.write(loss+'\n')
+                
 
 
 
@@ -378,7 +448,6 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 
     print >> sys.stderr, "Loading test data...",
     start = time.time()
-    
     test_articles = load_data(config.test_article_file)
     test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
