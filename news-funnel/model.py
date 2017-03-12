@@ -369,10 +369,10 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     saver = tf.train.Saver()
     loss = None
 
+    tlossf = open(config.test_loss_file_root+count, 'w+')
 
     def test_lite(sess, count):
         testf = open(config.test_results_file_root+count, 'w+')
-        tlossf = open(config.test_loss_file_root+count, 'w+')
         loss_sum = 0.
         for i in xrange(config.num_batches_for_testing):
             summaries, loss = sess.run([predictions, dev_loss_op])
@@ -415,7 +415,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
 
                 if counter % config.param_save_step == 0:
                     saver.save(sess, config.saver_path, global_step=counter)
-                    test_lite(sess, counter/config.save_step)
+                    test_lite(sess, counter)
                     print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
                 loss, _ = sess.run([loss_op, training_op])
                 lf.write(loss+'\n')
