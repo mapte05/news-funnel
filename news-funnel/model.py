@@ -371,8 +371,8 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
 
 
     def test_lite(sess, count):
-        testf = open(config.test_results_file_root+count, 'r+')
-        tlossf = open(config.test_loss_file_root+count, 'r+')
+        testf = open(config.test_results_file_root+count, 'w+')
+        tlossf = open(config.test_loss_file_root+count, 'w+')
         loss_sum = 0.
         for i in xrange(config.num_batches_for_testing):
             summaries, loss = sess.run([predictions, dev_loss_op])
@@ -390,7 +390,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         tlossf.write(','.join([mean_loss, grad_norm, lr]) + '\n')
 
 
-    lf = open(config.train_loss_file, 'r+')
+    lf = open(config.train_loss_file, 'w+')
     with tf.Session() as sess:
         sess.run(init)
         coord = tf.train.Coordinator()
