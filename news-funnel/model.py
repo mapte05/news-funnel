@@ -386,7 +386,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
                     testf.write(' '.join(word for word in line)+'\n')
             mean_loss = loss_sum / config.num_batches_for_testing
             grad_norm, lr = sess.run([grad_norm_op, lr_op])
-            tlossf.write(','.join([str(mean_loss), str(grad_norm), str(lr)]) + '\n')
+            tlossf.write(','.join([str(count), str(mean_loss), str(grad_norm), str(lr)]) + '\n')
             tlossf.flush()
 
 
@@ -419,7 +419,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
                 test_lite(sess, counter)
                 print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
             loss, _ = sess.run([train_loss_op, training_op])
-            lf.write(str(loss)+'\n')
+            lf.write(str(counter)+','+str(loss)+'\n')
             lf.flush()
                 
 
