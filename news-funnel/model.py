@@ -325,7 +325,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     def load_train_example(sess, enqueue, coord):
         while True:
             for i in xrange(train_articles.shape[0]):
-                sess.run(enqueue, feed_dict={train_article_input: train_articles[i])
+                sess.run(enqueue, feed_dict={train_article_input: train_articles[i]})
                 if coord.should_stop():
                     return
 
