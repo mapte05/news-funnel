@@ -30,7 +30,7 @@ class Config(object):
     article_length = None # set during preprocessing
     embed_size = None # set during preprocessing (Rush: D = 200)
     hidden_size = 400 # taken from Rush (H)
-    batch_size = 128 # Rush uses 64
+    batch_size = 512 # Rush uses 64
     n_epochs = 15 # taken from Rush
     #n_layers = 3 # taken from Rush (L)
     lr = 0.005 # taken from Rush
@@ -42,12 +42,12 @@ class Config(object):
     encoding_method = "attention" # "attention" or "bag-of-words"
     save_step = 1000
     
-    max_vocab = 100000 # Nallapati 150k
+    max_vocab = 75000 # Nallapati 150k
     max_train_articles = None
     
     # Limits for memory conserve
-    max_summary_length = 15 #26
-    max_article_length = 30 #96
+    max_summary_length = 12 #26
+    max_article_length = 24 #96
     
     start_token = None # set during preprocessing
     end_token = None # set during preprocessing
