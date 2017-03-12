@@ -418,18 +418,13 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False):
                 print "10 minibatches took {:.2f} seconds".format(time.time() - start)
 
             if counter % config.param_save_step == 0:
-                test_loss = test_lite(sess, counter)
+                test_loss = loss#test_lite(sess, counter)
                 print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
 
                 # Save best model
                 if test_loss < best_loss:
                     best_loss = test_loss
                     saver.save(sess, config.saver_path, global_step=counter)
-            
-            size = 0
-            for v in tf.all_variables():
-                size += np.prod(v.get_shape().as_list())
-            print "total size:", size
 
             loss, _ = sess.run([train_loss_op, training_op])
             lf.write(str(counter)+','+str(loss)+'\n')
