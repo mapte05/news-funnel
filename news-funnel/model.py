@@ -30,7 +30,7 @@ class Config(object):
     article_length = None # set during preprocessing
     embed_size = None # set during preprocessing (Rush: D = 200)
     hidden_size = 400 # taken from Rush (H)
-    batch_size = 64 # Rush uses 64
+    batch_size = 512 # Rush uses 64
     n_epochs = 15 # taken from Rush
     #n_layers = 3 # taken from Rush (L)
     lr = 0.005 # taken from Rush
@@ -42,12 +42,12 @@ class Config(object):
     encoding_method = "attention" # "attention" or "bag-of-words"
     param_save_step = 1000
     
-    max_vocab = 100000 # Nallapati 150k
+    max_vocab = 75000 # Nallapati 150k
     max_train_articles = None
     
     # Limits for memory conserve
-    max_summary_length = 26 #26
-    max_article_length = 96 #96
+    max_summary_length = 12 #26
+    max_article_length = 24 #96
     
     start_token = None # set during preprocessing
     end_token = None # set during preprocessing
@@ -74,7 +74,7 @@ class Config(object):
     dev_article_file = './data/train/valid.article.filter.txt'
     dev_title_file = './data/train/valid.title.filter.txt'
     test_article_file = './data/giga/input.txt' # also need to test on duc2003/duc2004
-    embedding_file = './data/glove.6B.50d.txt' #TODO: replace with 'glove.6B.200d.txt
+    embedding_file = './data/glove.6B.200d.txt' #TODO: replace with 'glove.6B.200d.txt
     
 
 class RushModel:
@@ -325,7 +325,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     def load_train_example(sess, enqueue, coord):
         while True:
             for i in xrange(train_articles.shape[0]):
-                sess.run(enqueue, feed_dict={train_article_input: train_articles[i], train_summary_input: train_summaries[i]})
+                sess.run(enqueue, feed_dict={train_article_input: train_articles[i])
                 if coord.should_stop():
                     return
 
@@ -424,7 +424,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
 
 
 
-def test_main(param_file, config_file="config/config_file", load_config_from_file=False, debug=False):
+def test_main(param_file, config_file="config/config_file", load_config_from_file=True, debug=False):
     print >> sys.stderr,  80 * "="
     print >> sys.stderr, "INITIALIZING"
     print >> sys.stderr, 80 * "="
