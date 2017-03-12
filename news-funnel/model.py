@@ -325,7 +325,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     def load_train_example(sess, enqueue, coord):
         while True:
             for i in xrange(train_articles.shape[0]):
-                sess.run(enqueue, feed_dict={train_article_input: train_articles[i]})
+                sess.run(enqueue, feed_dict={train_article_input: train_articles[i], train_summary_input: train_summaries[i]})
                 if coord.should_stop():
                     return
 
@@ -418,7 +418,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
                     saver.save(sess, config.saver_path, global_step=counter)
                     test_lite(sess, counter)
                     print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
-                loss, _ = sess.run([loss_op, training_op])
+                loss, _ = sess.run([train_loss_op, training_op])
                 lf.write(loss+'\n')
                 
 
