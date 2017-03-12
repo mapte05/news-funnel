@@ -322,7 +322,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     print "writing Config to file"
     write_config(config, config_file)
 
-    def load_training_example(sess, enqueue, coord):
+    def load_train_example(sess, enqueue, coord):
         while True:
             for i in xrange(train_articles.shape[0]):
                 sess.run(enqueue, feed_dict={train_article_input: train_articles[i], train_summary_input: train_summaries[i]})
