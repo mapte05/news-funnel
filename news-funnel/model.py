@@ -23,16 +23,16 @@ class Config(object):
     information parameters. Model objects are passed a Config() object at
     instantiation.
     """
-    n_features = 36
+    #n_features = 36
     vocab_size = None # set during preprocessing
     context_size = 5 # taken from Rush (C)
     summary_length = None # set during preprocessing
     article_length = None # set during preprocessing
     embed_size = None # set during preprocessing (Rush: D = 200)
     hidden_size = 400 # taken from Rush (H)
-    batch_size = 64 # taken from Rush
+    batch_size = 128 # Rush uses 64
     n_epochs = 15 # taken from Rush
-    n_layers = 3 # taken from Rush (L)
+    #n_layers = 3 # taken from Rush (L)
     lr = 0.005 # taken from Rush
     lr_decay_base = .5 # taken from Rush
     lr_decay_after_steps = 100000
@@ -46,8 +46,8 @@ class Config(object):
     max_train_articles = None
     
     # Limits for memory conserve
-    max_summary_length = 26
-    max_article_length = 96
+    max_summary_length = 15 #26
+    max_article_length = 30 #96
     
     start_token = None # set during preprocessing
     end_token = None # set during preprocessing
@@ -68,7 +68,7 @@ class Config(object):
     dev_article_file = './data/train/valid.article.filter.txt'
     dev_title_file = './data/train/valid.title.filter.txt'
     test_article_file = './data/giga/input.txt' # also need to test on duc2003/duc2004
-    embedding_file = './data/glove.6B.50d.txt' #TODO: replace with 'glove.6B.200d.txt
+    embedding_file = './data/glove.6B.200d.txt' #TODO: replace with 'glove.6B.200d.txt
     
 
 class RushModel:
@@ -293,8 +293,9 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         config.summary_length = summary_length = min(max(len(x) for x in train_summaries) + 1, config.max_summary_length)
         train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
 
-        np.save(config.preprocessed_articles_file, train_articles)
-        np.save(config.preprocessed_summaries_file, train_summaries)
+        if not debug:
+        	np.save(config.preprocessed_articles_file, train_articles)
+	        np.save(config.preprocessed_summaries_file, train_summaries)
     assert train_articles.shape[0] == train_summaries.shape[0]
     print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
     print "took {:.2f} seconds".format(time.time() - start)
@@ -346,9 +347,12 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
         print 80 * "="
         counter = 0
         with coord.stop_on_exception():
+            start = time.time()
             while True:
                 counter += 1
-                if counter % config.save_step == 0:
+                if counter % 10 == 0:
+                    print "10 minibatches took {:.2f} seconds".format(time.time() - start)
+		if counter % config.save_step == 0:
                     # saver.save(sess, 'news-funnel')
                     saver.save(sess, config.saver_path, global_step=counter)
                     print "SAVED PARAMETERS"
