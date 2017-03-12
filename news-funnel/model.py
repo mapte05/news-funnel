@@ -360,7 +360,7 @@ def train_main(config_file="config/config_file", debug=True, run_dev=False, relo
     # Define testing pipeline
     dev_article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
     dev_summary_input = tf.placeholder(tf.int32, shape=(config.summary_length,))
-    dev_queue = tf.FIFOQueue(1024, [tf.int32], shapes=[(config.article_length,)])
+    dev_queue = tf.FIFOQueue(1024, [tf.int32], shapes=[(config.article_length,), (config.summary_length,)])
     dev_enqueue = dev_queue.enqueue([dev_article_input, dev_summary_input])
     
     dev_article_batch, dev_summary_batch = dev_queue.dequeue_many(config.batch_size)
