@@ -425,9 +425,9 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False):
                 # Save best model
                 if test_loss < best_loss:
                     best_loss = test_loss
-                    best_files = glob.glob(saver_path + '*')
+                    best_files = glob.glob(config.saver_path + '*')
                     for f in best_files:
-                        shutil.copyfile(f, saver_path + 'best' + f.split('.')[1])
+                        shutil.copyfile(f, config.saver_path + '-best' + f.split('.')[1])
 
             loss, _ = sess.run([train_loss_op, training_op])
             lf.write(str(counter)+','+str(loss)+'\n')
