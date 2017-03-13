@@ -118,7 +118,7 @@ class RushModel:
     def renormalize(self):
         with tf.variable_scope("prediction_step", reuse=True):
             embeddings = [tf.get_variable(name) for name in ["E", "F", "G"]
-            return [E.assign(tf.nn.l2_normalize(E, 1)) for E in embeddings]:
+            return [E.assign(tf.nn.l2_normalize(E, 1)) for E in embeddings]
     
     def do_prediction_step(self, input, context, suppress_unknown=False):
         xavier_init = tf.contrib.layers.xavier_initializer()
@@ -433,9 +433,9 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
         while True:
             loss, counter, _ = sess.run([train_loss_op, global_step, training_op])
             lf.write(str(counter) + ','+str(loss)+'\n')
-            lf.flush()
         
             if counter % 10 == 0:
+                lf.flush()
                 print counter, " minibatches took {:.2f} seconds".format(time.time() - start)
 
             if counter % config.test_interval == 0:
