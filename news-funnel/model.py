@@ -33,7 +33,7 @@ class Config(object):
     embed_size = None # set during preprocessing (Rush: D = 200)
     hidden_size = 400 # taken from Rush (H)
     batch_size = 512 # Rush uses 64
-    n_epochs = 15 # taken from Rush
+    #n_epochs = 15 # taken from Rush
     #n_layers = 3 # taken from Rush (L)
     lr = 0.005 # taken from Rush
     lr_decay_base = .5 # taken from Rush
@@ -43,8 +43,8 @@ class Config(object):
     beam_size = 5
     encoding_method = "attention" # "attention" or "bag-of-words"
     
-    test_interval = 5
-    renormalize_interval = 3
+    test_interval = 
+    renormalize_interval = 10000
     
     max_vocab = 75000 # Nallapati 150k
     max_train_articles = None
@@ -59,7 +59,7 @@ class Config(object):
     null_token = None # set during preprocessing
     unknown_token = None # set during preprocessing
 
-    num_batches_for_testing = 1
+    num_batches_for_testing = 3
 
     saver_path = 'variables/news-funnel-model'
     train_article_file = './data/train/train.article.txt'
@@ -410,9 +410,6 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
     with tf.Session() as sess:
         if load_vars_from_file:
             saver.restore(sess, tf.train.latest_checkpoint('./variables/'))
-            for v in tf.get_collection(tf.GraphKeys.VARIABLES, scope='my_scope'):
-                v_ = sess.run(v)
-                print(v_)
         else:
             sess.run(tf.global_variables_initializer())
         tf.train.start_queue_runners(sess=sess)
@@ -447,7 +444,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
                 # Save best model
                 if test_loss < best_loss:
                     best_loss = test_loss
-                    saver.save(sess, config.saver_path, global_step=counter)
+                    saver.save(sess, config.saver_path, global_step=counter, max_to_keep=2)
             
             if counter % config.renormalize_interval == 0:
                 sess.run(renormalize_op)
