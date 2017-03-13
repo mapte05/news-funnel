@@ -117,7 +117,7 @@ class RushModel:
     
     def renormalize(self):
         with tf.variable_scope("prediction_step", reuse=True):
-            embeddings = [tf.get_variable(name) for name in ["E", "F", "G"]
+            embeddings = [tf.get_variable(name) for name in ["E", "F", "G"]]
             return [E.assign(tf.nn.l2_normalize(E, 1)) for E in embeddings]
     
     def do_prediction_step(self, input, context, suppress_unknown=False):
