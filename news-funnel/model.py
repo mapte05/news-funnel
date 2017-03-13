@@ -26,7 +26,7 @@ class Config(object):
     instantiation.
     """
     #n_features = 36
-    counter_start = 20000
+    counter_start = 25000
     vocab_size = None # set during preprocessing
     context_size = 5 # taken from Rush (C)
     summary_length = None # set during preprocessing
