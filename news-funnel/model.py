@@ -26,6 +26,7 @@ class Config(object):
     instantiation.
     """
     #n_features = 36
+    counter_start = 20000
     vocab_size = None # set during preprocessing
     context_size = 5 # taken from Rush (C)
     summary_length = None # set during preprocessing
@@ -266,7 +267,7 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file="config/config_file", debug=True, reload_data=False): 
+def train_main(config_file="config/config_file", debug=True, reload_data=False, load_vars_from_file=True): 
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
@@ -372,7 +373,12 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False):
     dev_loss_op = model.add_loss_op(dev_article_batch, dev_summary_batch)
     predictions = model.predict(dev_article_batch)
 
-    
+    counter = 0
+    init = None
+    open_code = 'w+'
+    if load_vars_from_file:
+        counter = config.counter_start
+        open_code = 'a+'
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
     loss = None
@@ -401,7 +407,22 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False):
 
     lf = open(config.train_loss_file, 'w+')
     with tf.Session() as sess:
-        sess.run(init)
+        if load_vars_from_file:
+            saver.restore(sess, tf.train.latest_checkpoint('./variables/'))
+            tf.add_to_collection('vars', U)
+            tf.add_to_collection('vars', b1)
+            tf.add_to_collection('vars', V)
+            tf.add_to_collection('vars', W)
+            tf.add_to_collection('vars', b2)
+            tf.add_to_collection('vars', P)
+            tf.add_to_collection('vars', E)
+            tf.add_to_collection('vars', F)
+            tf.add_to_collection('vars', G)
+            for v in all_vars:
+                v_ = sess.run(v)
+                print(v_)
+        else:
+            sess.run(init)
         tf.train.start_queue_runners(sess=sess)
         
         coord = tf.train.Coordinator()
@@ -415,7 +436,6 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False):
         print 80 * "="
         print "TRAINING"
         print 80 * "="
-        counter = 0
         best_loss = float('inf')
         # with coord.stop_on_exception():
         start = time.time()
