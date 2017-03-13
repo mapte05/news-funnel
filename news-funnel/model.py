@@ -273,7 +273,7 @@ def load_config(config_file):
     return config
 
 
-def train_main(config_file="config/config_file", debug=True, reload_data=False, load_vars_from_file=True): 
+def train_main(config_file="config/config_file", debug=True, reload_data=False, load_vars_from_file=False): 
     print 80 * "="
     print "INITIALIZING"
     print 80 * "="
@@ -541,7 +541,7 @@ if __name__ == '__main__':
     assert(1 < len(sys.argv) <= 4)
     debug = False
     if 'train' in sys.argv:
-        train_main(debug=('debug' in sys.argv), reload_data=('rewrite' in sys.argv))
+        train_main(debug=('debug' in sys.argv), reload_data=('rewrite' in sys.argv), load_vars_from_file=('resume' in sys.argv))
     elif 'test' in sys.argv:
         test_main(sys.argv[2], debug=('debug' in sys.argv))
     else:
