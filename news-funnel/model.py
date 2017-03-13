@@ -128,7 +128,7 @@ class RushModel:
 
         with tf.variable_scope("prediction_step", reuse=self.defined):
             output_embeddings = tf.get_variable("E", initializer=embed_init)
-            tf.Print(output_embeddings, [tf.reduce_sum(tf.nn.embedding_lookup(ids=[0], params=output_embeddings)**2 )])
+            output_embeddings = tf.Print(output_embeddings, [tf.reduce_sum(tf.nn.embedding_lookup(ids=[0], params=output_embeddings)**2 )])
             input_embeddings = tf.get_variable("F", initializer=embed_init)
             encoding_embeddings = tf.get_variable("G", initializer=embed_init)
             
