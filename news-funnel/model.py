@@ -42,7 +42,8 @@ class Config(object):
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
     encoding_method = "attention" # "attention" or "bag-of-words"
-    save_interval = 5
+    
+    test_interval = 5
     renormalize_interval = 3
     
     max_vocab = 75000 # Nallapati 150k
@@ -434,6 +435,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
             loss, counter, _ = sess.run([train_loss_op, global_step, training_op])
             lf.write(str(counter) + ','+str(loss)+'\n')
         
+            print counter, loss
             if counter % 10 == 0:
                 lf.flush()
                 print counter, " minibatches took {:.2f} seconds".format(time.time() - start)
