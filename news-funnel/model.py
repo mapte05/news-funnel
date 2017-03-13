@@ -409,16 +409,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
     with tf.Session() as sess:
         if load_vars_from_file:
             saver.restore(sess, tf.train.latest_checkpoint('./variables/'))
-            tf.add_to_collection('vars', U)
-            tf.add_to_collection('vars', b1)
-            tf.add_to_collection('vars', V)
-            tf.add_to_collection('vars', W)
-            tf.add_to_collection('vars', b2)
-            tf.add_to_collection('vars', P)
-            tf.add_to_collection('vars', E)
-            tf.add_to_collection('vars', F)
-            tf.add_to_collection('vars', G)
-            for v in all_vars:
+            for v in tf.get_collection(tf.GraphKeys.VARIABLES, scope='my_scope'):
                 v_ = sess.run(v)
                 print(v_)
         else:
