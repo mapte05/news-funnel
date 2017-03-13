@@ -375,15 +375,15 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
 
     counter = 0
     init = None
-    open_code = 'w+'
+    loss_file_open_code = 'w+'
     if load_vars_from_file:
         counter = config.counter_start
-        open_code = 'a+'
+        loss_file_open_code = 'a+'
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
     loss = None
 
-    tlossf = open(config.test_loss_file, 'w+')
+    tlossf = open(config.test_loss_file, loss_file_open_code)
 
     def test_lite(sess, count):
         with open(config.test_results_file_root+str(count), 'w+') as testf:
@@ -405,7 +405,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
         return loss_sum
 
 
-    lf = open(config.train_loss_file, 'w+')
+    lf = open(config.train_loss_file, loss_file_open_code)
     with tf.Session() as sess:
         if load_vars_from_file:
             saver.restore(sess, tf.train.latest_checkpoint('./variables/'))
