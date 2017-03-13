@@ -44,7 +44,7 @@ class Config(object):
     encoding_method = "attention" # "attention" or "bag-of-words"
     
     test_interval = 2500
-    renormalize_interval = 10000
+    renormalize_interval = 3 #10000
     
     max_vocab = 75000 # Nallapati 150k
     max_train_articles = None
@@ -128,6 +128,7 @@ class RushModel:
 
         with tf.variable_scope("prediction_step", reuse=self.defined):
             output_embeddings = tf.get_variable("E", initializer=embed_init)
+            tf.Print(output_embeddings, [tf.norm(output_embeddings, tf.nn.embedding_lookup(ids=[4], params=output_embeddings))])
             input_embeddings = tf.get_variable("F", initializer=embed_init)
             encoding_embeddings = tf.get_variable("G", initializer=embed_init)
             
