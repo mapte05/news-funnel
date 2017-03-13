@@ -26,7 +26,6 @@ class Config(object):
     instantiation.
     """
     #n_features = 36
-    counter_start = 0
     vocab_size = None # set during preprocessing
     context_size = 5 # taken from Rush (C)
     summary_length = None # set during preprocessing
@@ -251,7 +250,7 @@ class RushModel:
         Returns:
             train_op: The Op for training.
         """
-        global_step = tf.Variable(0, trainable=False)
+        global_step = tf.get_variable("global_step", initializer=0, trainable=False)
         learning_rate = tf.train.exponential_decay(self.config.lr, global_step, self.config.lr_decay_after_steps, self.config.lr_decay_base, staircase=self.config.lr_staircase)
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 
@@ -261,7 +260,7 @@ class RushModel:
         grads_clipped, _ = tf.clip_by_global_norm(grads, self.config.max_grad_norm)
         train_op = optimizer.apply_gradients(zip(grads_clipped, vars), global_step=global_step)
 
-        return train_op, tf.global_norm(grads), learning_rate
+        return train_op, global_step, tf.global_norm(grads), learning_rate
 
 def write_config(config, config_file):
     with open(config_file, 'wb') as outf:
@@ -364,7 +363,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
     train_summary_batch = tf.reshape(train_summary_batch, (config.batch_size, config.summary_length))
     
     train_loss_op = model.add_loss_op(train_article_batch, train_summary_batch)
-    training_op, grad_norm_op, lr_op = model.add_training_op(train_loss_op)
+    training_op, global_step, grad_norm_op, lr_op = model.add_training_op(train_loss_op)
     renormalize_op = model.renormalize()
 
     # Define testing pipeline
@@ -380,17 +379,12 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
     dev_loss_op = model.add_loss_op(dev_article_batch, dev_summary_batch)
     predictions = model.predict(dev_article_batch)
 
-    counter = 0
-    init = None
-    loss_file_open_code = 'w+'
     if load_vars_from_file:
-        counter = config.counter_start
-        loss_file_open_code = 'a+'
-    init = tf.global_variables_initializer()
-    saver = tf.train.Saver()
-    loss = None
-
-    tlossf = open(config.test_loss_file, loss_file_open_code)
+        tlossf = open(config.test_loss_file, "a+")
+        lf = open(config.train_loss_file, "a+")
+    else:
+        tlossf = open(config.test_loss_file, "w+")
+        lf = open(config.train_loss_file, "w+")
 
     def test_lite(sess, count):
         with open(config.test_results_file_root+str(count), 'w+') as testf:
@@ -411,8 +405,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
             tlossf.flush()
         return loss_sum
 
-
-    lf = open(config.train_loss_file, loss_file_open_code)
+    saver = tf.train.Saver()
     with tf.Session() as sess:
         if load_vars_from_file:
             saver.restore(sess, tf.train.latest_checkpoint('./variables/'))
@@ -420,7 +413,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
                 v_ = sess.run(v)
                 print(v_)
         else:
-            sess.run(init)
+            sess.run(tf.global_variables_initializer())
         tf.train.start_queue_runners(sess=sess)
         
         coord = tf.train.Coordinator()
@@ -438,7 +431,10 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
         # with coord.stop_on_exception():
         start = time.time()
         while True:
-            counter += 1
+            loss, counter, _ = sess.run([train_loss_op, global_step, training_op])
+            lf.write(str(counter) + ','+str(loss)+'\n')
+            lf.flush()
+        
             if counter % 10 == 0:
                 print counter, " minibatches took {:.2f} seconds".format(time.time() - start)
 
@@ -453,11 +449,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
             
             if counter % config.renormalize_interval == 0:
                 sess.run(renormalize_op)
-
-            loss, _ = sess.run([train_loss_op, training_op])
-            lf.write(str(counter)+','+str(loss)+'\n')
-            lf.flush()
-                
+                print "RENORMALIZED"
 
 
 
