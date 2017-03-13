@@ -26,14 +26,14 @@ class Config(object):
     instantiation.
     """
     #n_features = 36
-    counter_start = 25000
+    counter_start = 0
     vocab_size = None # set during preprocessing
     context_size = 5 # taken from Rush (C)
     summary_length = None # set during preprocessing
     article_length = None # set during preprocessing
     embed_size = None # set during preprocessing (Rush: D = 200)
     hidden_size = 400 # taken from Rush (H)
-    batch_size = 384 # Rush uses 64
+    batch_size = 512 # Rush uses 64
     n_epochs = 15 # taken from Rush
     #n_layers = 3 # taken from Rush (L)
     lr = 0.005 # taken from Rush
@@ -43,7 +43,8 @@ class Config(object):
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
     encoding_method = "attention" # "attention" or "bag-of-words"
-    param_save_step = 5000
+    save_interval = 5
+    renormalize_interval = 3
     
     max_vocab = 75000 # Nallapati 150k
     max_train_articles = None
@@ -114,6 +115,11 @@ class RushModel:
         if summaries_batch is not None:
             feed_dict[self.summaries_placeholder] = summaries_batch
         return feed_dict
+    
+    def renormalize(self):
+        with tf.variable_scope("prediction_step", reuse=True):
+            embeddings = [tf.get_variable(name) for name in ["E", "F", "G"]
+            return [E.assign(tf.nn.l2_normalize(E, 1)) for E in embeddings]:
     
     def do_prediction_step(self, input, context, suppress_unknown=False):
         xavier_init = tf.contrib.layers.xavier_initializer()
@@ -252,8 +258,8 @@ class RushModel:
         #train_op = optimizer.minimize(loss, global_step=global_step)
         grads, vars = zip(*optimizer.compute_gradients(loss))
 
-        grads, _ = tf.clip_by_global_norm(grads, self.config.max_grad_norm)
-        train_op = optimizer.apply_gradients(zip(grads, vars), global_step=global_step)
+        grads_clipped, _ = tf.clip_by_global_norm(grads, self.config.max_grad_norm)
+        train_op = optimizer.apply_gradients(zip(grads_clipped, vars), global_step=global_step)
 
         return train_op, tf.global_norm(grads), learning_rate
 
@@ -359,6 +365,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
     
     train_loss_op = model.add_loss_op(train_article_batch, train_summary_batch)
     training_op, grad_norm_op, lr_op = model.add_training_op(train_loss_op)
+    renormalize_op = model.renormalize()
 
     # Define testing pipeline
     dev_article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
@@ -433,16 +440,19 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
         while True:
             counter += 1
             if counter % 10 == 0:
-                print "10 minibatches took {:.2f} seconds".format(time.time() - start)
+                print counter, " minibatches took {:.2f} seconds".format(time.time() - start)
 
-            if counter % config.param_save_step == 0:
+            if counter % config.test_interval == 0:
                 test_loss = test_lite(sess, counter)
                 print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
-
+                    
                 # Save best model
                 if test_loss < best_loss:
                     best_loss = test_loss
                     saver.save(sess, config.saver_path, global_step=counter)
+            
+            if counter % config.renormalize_interval == 0:
+                sess.run(renormalize_op)
 
             loss, _ = sess.run([train_loss_op, training_op])
             lf.write(str(counter)+','+str(loss)+'\n')
