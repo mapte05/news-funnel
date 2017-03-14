@@ -42,7 +42,7 @@ class Config(object):
     beam_size = 5
     encoding_method = "attention" # "attention" or "bag-of-words"
     
-    test_interval = 5
+    test_interval = 2500
     renormalize_interval = 10000
     
     max_vocab = 75000 # Nallapati 150k
