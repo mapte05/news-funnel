@@ -193,6 +193,21 @@ class RushModel:
             return logits, x
 
     def add_loss_op(self, articles, summaries):
+        logits = []
+        padded_context = tf.concat_v2([
+            tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token), 
+            summaries], 1)
+        for i in xrange(self.config.summary_length):
+            context = tf.slice(padded_context, [0, i], [-1, self.config.context_size])
+            logit, _ = self.do_prediction_step(articles, context)
+            logits.append(logit)
+        logits = tf.stack(logits, axis=1)
+        
+        null_mask = tf.not_equal(summaries, self.config.null_token)
+        cross_entropy_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries)
+        return tf.reduce_mean(tf.boolean_mask(cross_entropy_loss, null_mask))
+        
+    def add_approx_loss_op(self, articles, summaries):
         activations = []
         padded_context = tf.concat_v2([
             tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token), 
@@ -392,7 +407,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
     train_article_batch = tf.reshape(train_article_batch, (config.batch_size, config.article_length)) # hacky
     train_summary_batch = tf.reshape(train_summary_batch, (config.batch_size, config.summary_length))
     
-    train_loss_op = model.add_loss_op(train_article_batch, train_summary_batch)
+    train_loss_op = model.add_approx_loss_op(train_article_batch, train_summary_batch)
     training_op, global_step, grad_norm_op, lr_op = model.add_training_op(train_loss_op)
     renormalize_op = model.renormalize()
 
@@ -406,6 +421,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
     dev_article_batch = tf.reshape(dev_article_batch, (config.batch_size, config.article_length)) # hacky
     dev_summary_batch = tf.reshape(dev_summary_batch, (config.batch_size, config.summary_length))
     
+    dev_approx_loss_op = model.add_approx_loss_op(dev_article_batch, dev_summary_batch)
     dev_loss_op = model.add_loss_op(dev_article_batch, dev_summary_batch)
     predictions = model.predict(dev_article_batch)
 
@@ -419,9 +435,11 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
     def test_lite(sess, count):
         with open(config.test_results_file_root+str(count), 'w+') as testf:
             loss_sum = 0.
+            approx_loss_sum = 0.
             for i in xrange(config.num_batches_for_testing):
-                summaries, loss = sess.run([predictions, dev_loss_op])
+                summaries, loss, approx_loss = sess.run([predictions, dev_loss_op, dev_approx_loss_op])
                 loss_sum += loss
+                approx_loss_sum += approx_loss
                 for summary in summaries.tolist():
                     line = []
                     for id in summary:
@@ -430,8 +448,9 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
                         line.append(id_to_token[id])
                     testf.write(' '.join(word for word in line)+'\n')
             mean_loss = loss_sum / config.num_batches_for_testing
+            mean_approx_loss = approx_loss_sum / config.num_batches_for_testing
             grad_norm, lr = sess.run([grad_norm_op, lr_op])
-            tlossf.write(','.join([str(count), str(mean_loss), str(grad_norm), str(lr)]) + '\n')
+            tlossf.write(','.join([str(count), str(mean_loss), str(grad_norm), str(lr), str(mean_approx_loss)]) + '\n')
             tlossf.flush()
         return loss_sum
 
