@@ -85,7 +85,7 @@ class Config(object):
 class RushModel:
 
     def __init__(self, word2vec_embeddings, config):
-        self.word2vec_embeddings = tf.nn.l2_normalize(word2vec_embeddings, 2)
+        self.word2vec_embeddings = tf.nn.l2_normalize(word2vec_embeddings, 1)
         self.config = config
         self.defined = False
 
