@@ -188,7 +188,7 @@ class RushModel:
                 b2 = b2 - tf.one_hot([self.config.unknown_token], self.config.vocab_size, on_value=100000.)
             
             h = tf.tanh(tf.matmul(embedded_context, U) + b1)
-            x = tf.stack([h, encoded], axis=1)
+            x = tf.stack([h, encoded], axis=0)
             logits = tf.matmul(x, tf.transpose(V)) + b2
             return logits, x
     
