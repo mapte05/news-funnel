@@ -140,7 +140,7 @@ class RushModel:
         
         # Our custom initializations
         logits_bias_init = self.word_distribution
-        attention_bias_init = -0.22 * np.array(range(self.config.article_length)) # Decaying attention
+        attention_bias_init = -0.22 * np.array(range(self.config.article_length), dtype=np.float32) # Decaying attention
 
         with tf.variable_scope("prediction_step", reuse=self.defined):
             output_embeddings = tf.get_variable("E", initializer=embed_init)
