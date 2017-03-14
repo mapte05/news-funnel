@@ -14,7 +14,6 @@ import random
 import sys
 import os
 import glob
-import shutil
 from utils.model_utils import load_embeddings, load_data, preprocess_data
 
 
@@ -43,7 +42,7 @@ class Config(object):
     beam_size = 5
     encoding_method = "attention" # "attention" or "bag-of-words"
     
-    test_interval = 2500
+    test_interval = 5
     renormalize_interval = 10000
     
     max_vocab = 75000 # Nallapati 150k
@@ -438,12 +437,13 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
 
             if counter % config.test_interval == 0:
                 test_loss = test_lite(sess, counter)
-                print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
                     
                 # Save best model
                 if test_loss < best_loss:
                     best_loss = test_loss
                     saver.save(sess, config.saver_path, global_step=counter, max_to_keep=2)
+
+                print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
             
             if counter % config.renormalize_interval == 0:
                 sess.run(renormalize_op)
