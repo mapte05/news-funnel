@@ -153,8 +153,7 @@ class RushModel:
             U = tf.get_variable("U", shape=(self.config.context_size*self.config.embed_size, self.config.hidden_size), initializer=xavier_init, dtype=tf.float32)
             b1 = tf.get_variable("b1", shape=(1, self.config.hidden_size), initializer=zero_init, dtype=tf.float32)
             
-            V = tf.get_variable("V",  shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init, dtype=tf.float32)
-            W = tf.get_variable("W", shape=(self.config.embed_size, self.config.vocab_size), initializer=xavier_init, dtype=tf.float32) # TODO: Might need tweaking depend on encoding method
+            V = tf.get_variable("V",  shape=(self.config.vocab_size, self.config.hidden_size + self.config.embed_size), initializer=xavier_init, dtype=tf.float32) # TODO: Might need tweaking depend on encoding method
             #b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=logits_bias_init)
             b2 = tf.get_variable("b2", initializer=logits_bias_init)
 
@@ -189,22 +188,30 @@ class RushModel:
                 b2 = b2 - tf.one_hot([self.config.unknown_token], self.config.vocab_size, on_value=100000.)
             
             h = tf.tanh(tf.matmul(embedded_context, U) + b1)
-            logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
-        
-            return logits
+            x = tf.stack([h, encoded], axis=1)
+            logits = tf.matmul(x, tf.transpose(V)) + b2
+            return logits, x
+    
+    def get_logits(self, input, context, suppress_unknown=False):
+        V, W, h, 
 
     def add_loss_op(self, articles, summaries):
-        logits = []
+        activations = []
         padded_context = tf.concat_v2([
             tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token), 
             summaries], 1)
         for i in xrange(self.config.summary_length):
             context = tf.slice(padded_context, [0, i], [-1, self.config.context_size])
-            logits.append(self.do_prediction_step(articles, context))
-        logits = tf.stack(logits, axis=1)
+            _, x = self.do_prediction_step(articles, context)
+            activations.append(x)
         
+        with tf.variable_scope("prediction_step", reuse=True):
+            V = tf.get_variable("V")
+            b = tf.get_variable("b2")
+        
+        activations = tf.stack(activations, axis=1)
         null_mask = tf.not_equal(summaries, self.config.null_token)
-        cross_entropy_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries)
+        cross_entropy_loss = tf.nn.sampled_softmax_loss(V, b, summaries, activations)
         return tf.reduce_mean(tf.boolean_mask(cross_entropy_loss, null_mask))
         
     def predict(self, articles, method="greedy"):
@@ -212,7 +219,7 @@ class RushModel:
             padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
             for i in range(self.config.summary_length):
                 context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
-                logits = self.do_prediction_step(articles, context, suppress_unknown=True)
+                logits, _ = self.do_prediction_step(articles, context, suppress_unknown=True)
                 
                 # Experiment: use only common words
                 #logits = tf.slice(logits, [0, 0], [-1, 30000])
