@@ -44,7 +44,7 @@ class Config(object):
     encoding_method = "attention" # "attention" or "bag-of-words"
     
     test_interval = 50
-    renormalize_interval = 100
+    renormalize_interval = 7800
     
     max_vocab = 75000 # Nallapati 150k
     max_train_articles = None
