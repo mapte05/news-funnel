@@ -206,8 +206,8 @@ class RushModel:
             V = tf.get_variable("V")
             b = tf.get_variable("b2")
         
-        activations = tf.reshape(tf.stack(activations, axis=1), (self.config.batch_size, -1))
-        summaries = tf.reshape(summaries, (self.config.batch_size, -1))
+        activations = tf.reshape(tf.stack(activations, axis=1), (self.config.batch_size*self.config.summary_length, -1))
+        summaries = tf.reshape(summaries, (self.config.batch_size*self.config.summary_length, -1))
         null_mask = tf.not_equal(summaries, self.config.null_token)
         print [y.get_shape() for y in [V, b, summaries, activations]], self.config.vocab_size
         cross_entropy_loss = tf.nn.sampled_softmax_loss(V, b, summaries, activations, 2048, self.config.vocab_size)
