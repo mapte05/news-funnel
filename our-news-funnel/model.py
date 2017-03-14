@@ -93,8 +93,7 @@ class RushModel:
             self.word2vec_embeddings = None
             
         if word_distribution is not None:
-            word_distribution = np.log(word_distribution + 1)
-            self.word_distribution = word_distribution
+            self.word_distribution = np.log((word_distribution + 1).astype(np.float32))
         else:
             self.word_distribution = None
             

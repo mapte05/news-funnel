@@ -79,7 +79,7 @@ def preprocess_data(articles, token_to_id, article_length):
     return np.array(processed_articles, ndmin=2, dtype=np.int32)
 
 def count_words(words, vocab_size, null_token):
-	counts = np.zeros(vocab_size, dtype=np.float32)
+	counts = np.zeros(vocab_size, dtype=np.int32)
 	for i in xrange(words.shape[0]):
 		for j in xrange(words.shape[1]):
 			counts[words[i,j]] += 1.
