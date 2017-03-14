@@ -44,7 +44,7 @@ class Config(object):
     encoding_method = "attention" # "attention" or "bag-of-words"
     
     test_interval = 2500
-    renormalize_interval = 3 #10000
+    renormalize_interval = 10000
     
     max_vocab = 75000 # Nallapati 150k
     max_train_articles = None
@@ -85,7 +85,7 @@ class Config(object):
 class RushModel:
 
     def __init__(self, word2vec_embeddings, config):
-        self.word2vec_embeddings = word2vec_embeddings
+        self.word2vec_embeddings = tf.nn.l2_normalize(word2vec_embeddings, 1)
         self.config = config
         self.defined = False
 
@@ -128,7 +128,6 @@ class RushModel:
 
         with tf.variable_scope("prediction_step", reuse=self.defined):
             output_embeddings = tf.get_variable("E", initializer=embed_init)
-            output_embeddings = tf.Print(output_embeddings, [tf.reduce_sum(tf.nn.embedding_lookup(ids=[0], params=output_embeddings)**2 )])
             input_embeddings = tf.get_variable("F", initializer=embed_init)
             encoding_embeddings = tf.get_variable("G", initializer=embed_init)
             
@@ -432,8 +431,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
         while True:
             loss, counter, _ = sess.run([train_loss_op, global_step, training_op])
             lf.write(str(counter) + ','+str(loss)+'\n')
-        
-            print counter, loss
+            
             if counter % 10 == 0:
                 lf.flush()
                 print counter, " minibatches took {:.2f} seconds".format(time.time() - start)
