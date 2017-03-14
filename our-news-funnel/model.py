@@ -207,8 +207,9 @@ class RushModel:
             b = tf.get_variable("b2")
         
         activations = tf.reshape(tf.stack(activations, axis=1), (self.config.batch_size, -1))
-        null_mask = tf.reshape(tf.not_equal(summaries, self.config.null_token), (self.config.batch_size, -1))
-        cross_entropy_loss = tf.nn.sampled_softmax_loss(V, b, summaries, activations, 256, self.config.vocab_size)
+        summaries = tf.reshape(summaries, (self.config.batch_size, -1))
+        null_mask = tf.not_equal(summaries, self.config.null_token)
+        cross_entropy_loss = tf.nn.sampled_softmax_loss(V, b, summaries, activations, 2048, self.config.vocab_size)
         return tf.reduce_mean(tf.boolean_mask(cross_entropy_loss, null_mask))
         
     def predict(self, articles, method="greedy"):
