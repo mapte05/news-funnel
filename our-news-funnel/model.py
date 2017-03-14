@@ -93,8 +93,8 @@ class RushModel:
             self.word2vec_embeddings = None
             
         if word_distribution is not None:
-            word_distribution = np.log(word_distribution)
-            self.word_distribution = word_distribution - np.mean(word_distribution)
+            word_distribution = np.log(word_distribution + 1)
+            self.word_distribution = word_distribution
         else:
             self.word_distribution = None
             
@@ -428,7 +428,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
             tlossf.flush()
         return loss_sum
 
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(max_to_keep=2)
     with tf.Session() as sess:
         if load_vars_from_file:
             saver.restore(sess, tf.train.latest_checkpoint(config.variables_dir))
@@ -465,7 +465,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
                 # Save best model
                 if test_loss < best_loss:
                     best_loss = test_loss
-                    saver.save(sess, config.saver_path, global_step=counter, max_to_keep=2)
+                    saver.save(sess, config.saver_path, global_step=counter)
             
             if counter % config.renormalize_interval == 0:
                 sess.run(renormalize_op)
