@@ -147,7 +147,6 @@ class RushModel:
             input_embeddings = tf.get_variable("F", initializer=embed_init)
             encoding_embeddings = tf.get_variable("G", initializer=embed_init)
             
-            
             embedded_input = tf.nn.embedding_lookup(ids=input, params=input_embeddings)
             embedded_context = tf.reshape(tf.nn.embedding_lookup(ids=context, params=output_embeddings), (-1, self.config.context_size*self.config.embed_size))
             embedded_context_for_encoding = tf.reshape(tf.nn.embedding_lookup(ids=context, params=encoding_embeddings), (-1, self.config.context_size*self.config.embed_size))
