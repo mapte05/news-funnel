@@ -15,7 +15,7 @@ import sys
 import os
 import glob
 import shutil
-from utils.model_utils import load_embeddings, load_data, preprocess_data
+from utils.model_utils import load_embeddings, load_data, preprocess_data, count_words
 
 
 class Config(object):
@@ -63,10 +63,12 @@ class Config(object):
 
 
     saver_path = 'variables/news-funnel-model'
+    variables_dir = './variables/'
     train_article_file = '../news-funnel/data/train/train.article.txt'
     train_title_file = '../news-funnel/data/train/train.title.txt'
     preprocessed_articles_file="preprocessed_articles_file.npy"
     preprocessed_summaries_file="preprocessed_summaries_file.npy"
+    preprocessed_word_distribution_file="preprocessed_word_distribution_file.npy"
 
     train_loss_file = "eval/train_losses"
     test_loss_file = "eval/test_losses"
@@ -84,8 +86,18 @@ class Config(object):
 
 class RushModel:
 
-    def __init__(self, word2vec_embeddings, config):
-        self.word2vec_embeddings = tf.nn.l2_normalize(word2vec_embeddings, 1)
+    def __init__(self, config, word2vec_embeddings=None, word_distribution=None):
+        if word2vec_embeddings is not None:
+            self.word2vec_embeddings = tf.nn.l2_normalize(word2vec_embeddings, 1)
+        else:
+            self.word2vec_embeddings = None
+            
+        if word_distribution is not None:
+            word_distribution = np.log(word_distribution)
+            self.word_distribution = word_distribution - np.mean(word_distribution)
+        else:
+            self.word_distribution = None
+            
         self.config = config
         self.defined = False
 
@@ -125,11 +137,16 @@ class RushModel:
         xavier_init = tf.contrib.layers.xavier_initializer()
         zero_init = tf.constant_initializer(0.0)
         embed_init = self.word2vec_embeddings
+        
+        # Our custom initializations
+        logits_bias_init = self.word_distribution
+        attention_bias_init = -0.22 * np.array(range(config.article_length)) # Decaying attention
 
         with tf.variable_scope("prediction_step", reuse=self.defined):
             output_embeddings = tf.get_variable("E", initializer=embed_init)
             input_embeddings = tf.get_variable("F", initializer=embed_init)
             encoding_embeddings = tf.get_variable("G", initializer=embed_init)
+            
             
             embedded_input = tf.nn.embedding_lookup(ids=input, params=input_embeddings)
             embedded_context = tf.reshape(tf.nn.embedding_lookup(ids=context, params=output_embeddings), (-1, self.config.context_size*self.config.embed_size))
@@ -140,15 +157,16 @@ class RushModel:
             
             V = tf.get_variable("V",  shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
             W = tf.get_variable("W", shape=(self.config.embed_size, self.config.vocab_size), initializer=xavier_init) # TODO: Might need tweaking depend on encoding method
-            b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=zero_init)
+            b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=logits_bias_init)
 
             P = tf.get_variable("P", shape=(self.config.embed_size, self.config.embed_size*self.config.context_size), initializer=xavier_init)
+            b3 = tf.get_variable("b3", shape=(1, self.config.article_length), initializer=attention_bias_init)
             self.defined = True
         
             if self.config.encoding_method == "bag-of-words":
                 encoded = tf.reduce_mean(embedded_context_for_encoding, axis=-2) # average along input
             elif self.config.encoding_method == "attention":
-                p = tf.nn.softmax(tf.einsum('ij,bwi,bj->bw', P, embedded_input, embedded_context_for_encoding))
+                p = tf.nn.softmax(tf.einsum('ij,bwi,bj->bw', P, embedded_input, embedded_context_for_encoding) + b3)
                 
                 # Smoothing
                 start_embedding = tf.nn.embedding_lookup(ids=self.config.start_token, params=encoding_embeddings)
@@ -303,21 +321,25 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
     if not reload_data and os.path.isfile(config.preprocessed_articles_file) and os.path.isfile(config.preprocessed_summaries_file):
         train_articles = np.load(config.preprocessed_articles_file)
         train_summaries = np.load(config.preprocessed_summaries_file)
-        
+        word_distribution = np.load(config.preprocessed_word_distribution_file)
+
         config.article_length = train_articles.shape[1]
         config.summary_length = train_summaries.shape[1]
     else:
         train_articles = load_data(config.train_article_file, config.max_train_articles)
-        config.article_length = article_length = min(max(len(x) for x in train_articles) + 1, config.max_article_length)
-        train_articles = preprocess_data(train_articles, token_to_id, article_length)
+        config.article_length = min(max(len(x) for x in train_articles) + 1, config.max_article_length)
+        train_articles = preprocess_data(train_articles, token_to_id, config.article_length)
         
         train_summaries = load_data(config.train_title_file, config.max_train_articles)
-        config.summary_length = summary_length = min(max(len(x) for x in train_summaries) + 1, config.max_summary_length)
-        train_summaries = preprocess_data(train_summaries, token_to_id, summary_length)
+        config.summary_length = min(max(len(x) for x in train_summaries) + 1, config.max_summary_length)
+        train_summaries = preprocess_data(train_summaries, token_to_id, config.summary_length)
+        
+        word_distribution = count_words(train_summaries, config.vocab_size, config.null_token)
 
         if not debug:
         	np.save(config.preprocessed_articles_file, train_articles)
 	        np.save(config.preprocessed_summaries_file, train_summaries)
+	        np.save(config.preprocessed_word_distribution_file, word_distribution)
     assert train_articles.shape[0] == train_summaries.shape[0]
     print "loaded {0} articles, {1} summaries".format(train_articles.shape[0], train_summaries.shape[0])
     print "took {:.2f} seconds".format(time.time() - start)
@@ -351,7 +373,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
                 if coord.should_stop():
                     return
 
-    model = RushModel(embeddings, config)
+    model = RushModel(config, embeddings, word_distribution)
     
     # Define training pipeline
     train_article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
@@ -409,7 +431,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
     saver = tf.train.Saver()
     with tf.Session() as sess:
         if load_vars_from_file:
-            saver.restore(sess, tf.train.latest_checkpoint('./variables/'))
+            saver.restore(sess, tf.train.latest_checkpoint(config.variables_dir))
         else:
             sess.run(tf.global_variables_initializer())
         tf.train.start_queue_runners(sess=sess)
@@ -487,7 +509,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
             if coord.should_stop():
                 return
     
-    model = RushModel(embeddings, config)
+    model = RushModel(config)
 
     article_input = tf.placeholder(tf.int32, shape=(config.article_length,))
     queue = tf.FIFOQueue(1024, [tf.int32], shapes=[(config.article_length,)])
