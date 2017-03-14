@@ -1,0 +1,6 @@
+#!/bin/bash
+python model.py train 
+for i in {1..100}
+do
+	python model.py train resume $i
+done

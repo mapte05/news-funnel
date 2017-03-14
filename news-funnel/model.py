@@ -14,7 +14,6 @@ import random
 import sys
 import os
 import glob
-import shutil
 from utils.model_utils import load_embeddings, load_data, preprocess_data
 
 
@@ -406,7 +405,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
             tlossf.flush()
         return loss_sum
 
-    saver = tf.train.Saver()
+    saver = tf.train.Saver(max_to_keep=2)
     with tf.Session() as sess:
         if load_vars_from_file:
             saver.restore(sess, tf.train.latest_checkpoint('./variables/'))
@@ -438,12 +437,13 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
 
             if counter % config.test_interval == 0:
                 test_loss = test_lite(sess, counter)
-                print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
                     
                 # Save best model
                 if test_loss < best_loss:
                     best_loss = test_loss
-                    saver.save(sess, config.saver_path, global_step=counter, max_to_keep=2)
+                    saver.save(sess, config.saver_path, global_step=counter)
+
+                print "SAVED AND TESTED ON PARAMETERS | loss:", loss, "| counter:", counter
             
             if counter % config.renormalize_interval == 0:
                 sess.run(renormalize_op)
