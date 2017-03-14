@@ -157,10 +157,12 @@ class RushModel:
             
             V = tf.get_variable("V",  shape=(self.config.hidden_size, self.config.vocab_size), initializer=xavier_init)
             W = tf.get_variable("W", shape=(self.config.embed_size, self.config.vocab_size), initializer=xavier_init) # TODO: Might need tweaking depend on encoding method
-            b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=logits_bias_init)
+            #b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=logits_bias_init)
+            b2 = tf.get_variable("b2", initializer=logits_bias_init)
 
             P = tf.get_variable("P", shape=(self.config.embed_size, self.config.embed_size*self.config.context_size), initializer=xavier_init)
-            b3 = tf.get_variable("b3", shape=(1, self.config.article_length), initializer=attention_bias_init)
+            #b3 = tf.get_variable("b3", shape=(1, self.config.article_length), initializer=attention_bias_init)
+            b3 = tf.get_variable("b3", initializer=attention_bias_init)
             self.defined = True
         
             if self.config.encoding_method == "bag-of-words":
