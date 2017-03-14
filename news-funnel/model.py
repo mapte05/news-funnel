@@ -431,8 +431,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
         while True:
             loss, counter, _ = sess.run([train_loss_op, global_step, training_op])
             lf.write(str(counter) + ','+str(loss)+'\n')
-        
-            print counter, loss
+            
             if counter % 10 == 0:
                 lf.flush()
                 print counter, " minibatches took {:.2f} seconds".format(time.time() - start)
