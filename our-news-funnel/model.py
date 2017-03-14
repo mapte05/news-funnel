@@ -208,7 +208,7 @@ class RushModel:
         
         activations = tf.reshape(tf.stack(activations, axis=1), (self.config.batch_size*self.config.summary_length, -1))
         summaries = tf.reshape(summaries, (self.config.batch_size*self.config.summary_length, -1))
-        null_mask = tf.not_equal(summaries, self.config.null_token)
+        null_mask = tf.squeeze(tf.not_equal(summaries, self.config.null_token))
         
         # NOTE: r0.12 -> r1.0 swaps arg order
         cross_entropy_loss = tf.nn.sampled_softmax_loss(V, b, activations, summaries, 2048, self.config.vocab_size)
