@@ -188,12 +188,9 @@ class RushModel:
                 b2 = b2 - tf.one_hot([self.config.unknown_token], self.config.vocab_size, on_value=100000.)
             
             h = tf.tanh(tf.matmul(embedded_context, U) + b1)
-            x = tf.stack([h, encoded], axis=0)
+            x = tf.concat_v2([h, encoded], 1)
             logits = tf.matmul(x, tf.transpose(V)) + b2
             return logits, x
-    
-    def get_logits(self, input, context, suppress_unknown=False):
-        V, W, h, 
 
     def add_loss_op(self, articles, summaries):
         activations = []
