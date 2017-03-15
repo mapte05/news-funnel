@@ -206,15 +206,33 @@ class RushModel:
 
         elif method == "beam":
             padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
+            prediction_log_probs = tf.fill([self.config.batch_size, self.config.beam_size], 0)
             top_searches = [padded_predictions] * self.config.beam_size
             for i in range(self.config.summary_length):
                 # generate hypotheses
                 hypotheses = []
                 for k in range(self.config.beam_size):
                     context = tf.slice(top_searches[k], [0, i], [-1, self.config.context_size])
+                    log_probs = prediction_log_probs + tf.nn.log_softmax(logits=do_prediction_step(articles, context))
                     logits = self.do_prediction_step(articles, context, suppress_unknown=True)
                     hypotheses.append(logits)
-                all_logits = tf.stack(hypotheses)
+
+                # hypothesis recombination
+                # each row is an article in minibatch, each column is score for that word as predicted word
+                # for each article, recombine the scores
+                #      A             B
+                # [[1, 2, 3],   [[1, 2, 3],
+                #  [4, 5, 6]]    [4, 5, 6]]
+                # I'm assuming that tf.concat_v2([A, B], axis=1) = [[1, 2, 3, 1, 2, 3], [4, 5, 6, 4, 5, 6]]
+                logit_size = tf.shape(logits)[1] # length of each row
+                all_logits = tf.concat_v2(hypotheses, axis=1)
+
+                # filter K-Max
+                top_k = tf.nn.top_k(all_logits, k=self.config.beam_size, sorted=False)
+
+
+
+
 
 
 
