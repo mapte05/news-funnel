@@ -125,7 +125,7 @@ class RushModel:
         zero_init = tf.constant_initializer(0.0)
         embed_init = self.word2vec_embeddings
 
-        with tf.variable_scope("prediction_step", reuse=self.defined):
+        with tf.variable_scope("prediction_step", reuse=self.defined): # share parameters for each word predicted
             output_embeddings = tf.get_variable("E", initializer=embed_init)
             input_embeddings = tf.get_variable("F", initializer=embed_init)
             encoding_embeddings = tf.get_variable("G", initializer=embed_init)
@@ -198,8 +198,30 @@ class RushModel:
                 # Experiment: use only common words
                 #logits = tf.slice(logits, [0, 0], [-1, 30000])
                 
+                # tf.argmax(logits, axis=1) - grabs the largest value along axis=1 (so along rows)
+                # tf.expand_dims - adds back in placeholder values by increasing dimension to match padded_predictions
+                # tf.concat - adds the padded predictions
                 padded_predictions = tf.concat_v2([padded_predictions, tf.expand_dims(tf.to_int32(tf.argmax(logits, axis=1)), -1)], 1)
             return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
+
+        elif method == "beam":
+            padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
+            top_searches = [padded_predictions] * self.config.beam_size
+            for i in range(self.config.summary_length):
+                # generate hypotheses
+                hypotheses = []
+                for k in range(self.config.beam_size):
+                    context = tf.slice(top_searches[k], [0, i], [-1, self.config.context_size])
+                    logits = self.do_prediction_step(articles, context, suppress_unknown=True)
+                    hypotheses.append(logits)
+                all_logits = tf.stack(hypotheses)
+
+
+
+
+
+
+            
         """
         elif method == "beam":
             padded_predictions = tf.fill(self.config.start_token, [self.config.batch_size, self.config.beam_size, self.config.context_size])
