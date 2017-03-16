@@ -90,12 +90,12 @@ class RushModel:
         if word2vec_embeddings is not None:
             self.word2vec_embeddings = tf.nn.l2_normalize(word2vec_embeddings, 1)
         else:
-            self.word2vec_embeddings = None
+            self.word2vec_embeddings = tf.zeros(shape=(self.config.vocab_size, self.config.embed_size), dtype=tf.float32)
             
         if word_distribution is not None:
             self.word_distribution = np.log((word_distribution + 1).astype(np.float32))
         else:
-            self.word_distribution = None
+            self.word_distribution = tf.zeros(shape=(self.config.vocab_size,), dtype=tf.int32)
             
         self.config = config
         self.defined = False
@@ -144,7 +144,7 @@ class RushModel:
             embed_init, 
             embed_init, 
             xavier_init((self.config.vocab_size, self.config.hidden_size))
-        ], 1) if embed_init is not None else None
+        ], 1)
         attention_init = tf.concat_v2([np.eye(self.config.embed_size, dtype=np.float32)] * self.config.context_size, 1)
 
         with tf.variable_scope("prediction_step", reuse=self.defined):
