@@ -98,7 +98,7 @@ class RushModel:
         if word_distribution is not None:
             self.word_distribution = np.log((word_distribution + 1).astype(np.float32))
         else:
-            self.word_distribution = tf.zeros(shape=(self.config.vocab_size,), dtype=tf.int32)
+            self.word_distribution = tf.zeros(shape=(self.config.vocab_size,), dtype=tf.float32)
 
     def add_placeholders(self):
         self.input_placeholder = tf.placeholder(tf.int32, [None, self.config.article_length])
