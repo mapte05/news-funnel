@@ -252,7 +252,7 @@ class RushModel:
         
         elif method == "beam":            
             padded_predictions = tf.fill([self.config.batch_size, self.config.beam_size, self.config.context_size], self.config.start_token)
-            prediction_log_probs = tf.fill([self.config.batch_size, self.config.beam_size], 0)
+            prediction_log_probs = tf.fill([self.config.batch_size, self.config.beam_size], 0.)
             for i in range(self.config.summary_length):
                 contexts = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
                 
@@ -261,7 +261,7 @@ class RushModel:
                 logits = tf.transpose(logits, [1,0,2])
                 assert logits.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.vocab_size)
                 
-                log_probs = prediction_log_probs + tf.nn.log_softmax(logits=logits)
+                log_probs = prediction_log_probs + tf.nn.log_softmax(logits=logits) # note broadcasting
                 assert log_probs.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.vocab_size)
             
                 collapsed_log_probs = tf.reshape(log_probs, (self.config.batch_size, self.config.beam_size*self.config.vocab_size))
