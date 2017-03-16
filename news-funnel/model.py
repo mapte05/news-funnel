@@ -145,7 +145,7 @@ class RushModel:
             self.defined = True
         
             if self.config.encoding_method == "bag-of-words":
-                encoded = tf.reduce_mean(embedded_context_for_encoding, axis=-2) # average along input
+                encoded = tf.reduce_mean(embedded_input, axis=-2) # average along input
             elif self.config.encoding_method == "attention":
                 p = tf.nn.softmax(tf.einsum('ij,bwi,bj->bw', P, embedded_input, embedded_context_for_encoding))
                 
