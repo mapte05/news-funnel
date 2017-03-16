@@ -249,48 +249,38 @@ class RushModel:
                 
                 padded_predictions = tf.concat_v2([padded_predictions, tf.expand_dims(tf.to_int32(tf.argmax(logits, axis=1)), -1)], 1)
             return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
-        """
-        elif method == "beam":
+        
+        elif method == "beam":            
             padded_predictions = tf.fill(self.config.start_token, [self.config.batch_size, self.config.beam_size, self.config.context_size])
             prediction_log_probs = tf.fill(0, [self.config.batch_size, self.config.beam_size])
             for i in range(self.config.summary_length):
-                context = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
+                contexts = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
                 
-                log_probs = prediction_log_probs + tf.nn.log_softmax(logits=do_prediction_step(articles, context)) 
+                contexts = tf.transpose(contexts, [1,0,2])
+                logits = tf.map_fn((lambda context: self.do_prediction_step(articles, context)[0]), contexts)
+                logits = tf.transpose(logits, [1,0,2])
+                assert logits.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.vocab_size)
+                
+                log_probs = prediction_log_probs + tf.nn.log_softmax(logits=logits)
                 assert log_probs.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.vocab_size)
             
-                best_log_probs, best_words = tf.nn.top_k(input=log_probs, k=self.config.beam_size) 
-                assert best_log_probs.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.beam_size)
-                assert best_words.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.beam_size)
-                
-                best_log_probs = tf.reshape(best_log_probs, (self.config.batch_size, self.config.beam_size**2))
-                best_words = tf.reshape(best_words, (self.config.batch_size, self.config.beam_size**2))
-                prediction_log_probs, best_indices = tf.nn.top_k(input=best_log_probs, k=self.config.beam_size) 
+                collapsed_log_probs = tf.reshape(log_probs, (self.config.batch_size, self.config.beam_size*self.config.vocab_size))
+                prediction_log_probs, indices = tf.nn.top_k(input=collapsed_log_probs, k=self.config.beam_size) 
+                best_words = tf.mod(indices, self.config.vocab_size)
+                best_beams = tf.div(indices, self.config.vocab_size)
                 assert prediction_log_probs.get_shape() == (self.config.batch_size, self.config.beam_size)
-                assert best_indices.get_shape() == (self.config.batch_size, self.config.beam_size)
+                assert best_words.get_shape() == (self.config.batch_size, self.config.beam_size)
+                assert best_beams.get_shape() == (self.config.batch_size, self.config.beam_size)
                 
-                best_beams = tf.mod(best_indices, self.config.beam_size)
-                best_subbeams = tf.truncatediv(best_indices, self.config.beam_size)
-                
-                
-                
-                # dimensions: batch, beam, beam
-                
-                
-                
-                padded_predictions = tf.concat_v2(
-                    padded_prediction[best_indices.remove_last_dim + :], 
-                    best_indices.last_dim
-                )
-                # dimensions: 
-                
-                prediction_log_probs = best_log_probs
-                
-                padded_predictions = tf.stack()
-                prediction_logits = 
-        """        
-        # else:
-        #     raise Exception("predict method not greedy or beam")
+                padded_predictions = tf.concat_v2([
+                    tf.gather_nd(padded_predictions, best_beams),
+                    best_words
+                ], 2)
+            
+            return tf.squeeze(tf.slice(padded_predictions, [0, 0, self.config.context_size], [-1, 1, -1]), [1])
+    
+        else:
+            raise Exception("predict method not greedy or beam")
 
     def add_training_op(self, loss):
         """Sets up the training Ops.
