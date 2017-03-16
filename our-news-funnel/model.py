@@ -257,7 +257,7 @@ class RushModel:
                 contexts = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
                 
                 contexts = tf.transpose(contexts, [1,0,2])
-                logits = tf.map_fn((lambda context: self.do_prediction_step(articles, context)[0]), contexts)
+                logits = tf.map_fn((lambda context: self.do_prediction_step(articles, context)[0]), contexts, dtype=np.float32)
                 logits = tf.transpose(logits, [1,0,2])
                 assert logits.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.vocab_size)
                 
