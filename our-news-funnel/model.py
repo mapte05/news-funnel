@@ -237,7 +237,7 @@ class RushModel:
         cross_entropy_loss = tf.nn.sampled_softmax_loss(V, b, activations, summaries, 2048, self.config.vocab_size)
         return tf.reduce_mean(tf.boolean_mask(cross_entropy_loss, null_mask))
         
-    def predict(self, articles, method="beam"):
+    def predict(self, articles, method="greedy"):
         if method == "greedy":
             padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
             for i in range(self.config.summary_length):
@@ -502,7 +502,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
 
 
 
-def test_main(param_file, test_file=None, config_file="config/config_file", load_config_from_file=True, debug=False):
+def test_main(param_file, test_file=None, decoder_method='beam', config_file="config/config_file", load_config_from_file=True, debug=False):
     print >> sys.stderr,  80 * "="
     print >> sys.stderr, "INITIALIZING"
     print >> sys.stderr, 80 * "="
@@ -549,7 +549,7 @@ def test_main(param_file, test_file=None, config_file="config/config_file", load
     
     article_batch = queue.dequeue_many(config.batch_size)
     article_batch = tf.reshape(article_batch, (config.batch_size, config.article_length)) # hacky
-    predictions = model.predict(article_batch)
+    predictions = model.predict(article_batch, method=decoder_method)
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
@@ -585,6 +585,9 @@ if __name__ == '__main__':
     if 'train' in sys.argv:
         train_main(debug=('debug' in sys.argv), reload_data=('rewrite' in sys.argv), load_vars_from_file=('resume' in sys.argv))
     elif 'test' in sys.argv:
-        test_main(sys.argv[2], test_file=(sys.argv[sys.argv.index('-t') + 1] if '-t' in sys.argv), debug=('debug' in sys.argv))
+        test_main(sys.argv[2], 
+            test_file=(sys.argv[sys.argv.index('-t') + 1] if '-t' in sys.argv), 
+            decoder_method=(sys.argv[sys.argv.index('-m') + 1] if '-m' in sys.argv), 
+            debug=('debug' in sys.argv))
     else:
         print >> sys.stderr, "please specify your model: \"train\" or \"test\""
