@@ -144,7 +144,7 @@ class RushModel:
             embed_init, 
             embed_init, 
             xavier_init((self.config.vocab_size, self.config.hidden_size))
-        ], 1)
+        ], 1) if embed_init is not None else None
         attention_init = tf.concat_v2([np.eye(self.config.embed_size, dtype=np.float32)] * self.config.context_size, 1)
 
         with tf.variable_scope("prediction_step", reuse=self.defined):
