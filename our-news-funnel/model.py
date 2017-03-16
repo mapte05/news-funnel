@@ -274,7 +274,7 @@ class RushModel:
                 
                 reselected_padded_predictions = tf.gather(padded_predictions, best_beams)
                 print reselected_padded_predictions.get_shape()
-                assert reselected_padded_predictions.get_shape() == (self.config.batch_size, self.beam_size, self.config.context_size + i)
+                assert reselected_padded_predictions.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.context_size + i)
                 padded_predictions = tf.concat_v2([reselected_padded_predictions, best_words], 2)
             
             return tf.squeeze(tf.slice(padded_predictions, [0, 0, self.config.context_size], [-1, 1, -1]), [1])
