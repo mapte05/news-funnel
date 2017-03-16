@@ -144,7 +144,7 @@ class RushModel:
             embed_init, 
             embed_init, 
             xavier_init((self.config.vocab_size, self.config.hidden_size))
-        ], 1)
+        ], 1) if embed_init is not None else None
         attention_init = tf.concat_v2([np.eye(self.config.embed_size, dtype=np.float32)] * self.config.context_size, 1)
 
         with tf.variable_scope("prediction_step", reuse=self.defined):
@@ -237,7 +237,7 @@ class RushModel:
         cross_entropy_loss = tf.nn.sampled_softmax_loss(V, b, activations, summaries, 2048, self.config.vocab_size)
         return tf.reduce_mean(tf.boolean_mask(cross_entropy_loss, null_mask))
         
-    def predict(self, articles, method="greedy"):
+    def predict(self, articles, method="beam"):
         if method == "greedy":
             padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
             for i in range(self.config.summary_length):
