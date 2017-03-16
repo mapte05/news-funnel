@@ -251,8 +251,8 @@ class RushModel:
             return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
         
         elif method == "beam":            
-            padded_predictions = tf.fill(self.config.start_token, [self.config.batch_size, self.config.beam_size, self.config.context_size])
-            prediction_log_probs = tf.fill(0, [self.config.batch_size, self.config.beam_size])
+            padded_predictions = tf.fill([self.config.batch_size, self.config.beam_size, self.config.context_size], self.config.start_token)
+            prediction_log_probs = tf.fill([self.config.batch_size, self.config.beam_size], 0)
             for i in range(self.config.summary_length):
                 contexts = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
                 
