@@ -157,7 +157,7 @@ class RushModel:
             embedded_context_for_encoding = tf.reshape(tf.nn.embedding_lookup(ids=context, params=encoding_embeddings), (-1, self.config.context_size*self.config.embed_size))
             
             U = tf.get_variable("U", shape=(self.config.context_size*self.config.embed_size, self.config.embed_size+self.config.hidden_size), initializer=xavier_init, dtype=tf.float32)
-            b1 = tf.get_variable("b1", shape=(1, self.config.hidden_size), initializer=zero_init, dtype=tf.float32)
+            b1 = tf.get_variable("b1", shape=(1, self.config.embed_size+self.config.hidden_size), initializer=zero_init, dtype=tf.float32)
             
             #V = tf.get_variable("V",  shape=(self.config.vocab_size, self.config.hidden_size + self.config.embed_size), initializer=xavier_init, dtype=tf.float32)
             V = tf.get_variable("V",  initializer=decoder_init)
@@ -171,7 +171,7 @@ class RushModel:
             self.defined = True
         
             if self.config.encoding_method == "bag-of-words":
-                encoded = tf.reduce_mean(embedded_context_for_encoding, axis=-2) # average along input
+                encoded = tf.reduce_mean(embedded_input, axis=-2) # average along input
             elif self.config.encoding_method == "attention":
                 p = tf.nn.softmax(tf.einsum('ij,bwi,bj->bw', P, embedded_input, embedded_context_for_encoding) + b3)
                 
