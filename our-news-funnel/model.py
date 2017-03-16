@@ -502,7 +502,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
 
 
 
-def test_main(param_file, test_file=None, decoder_method='beam', config_file="config/config_file", load_config_from_file=True, debug=False):
+def test_main(param_file, test_file=None, decoder_method="beam", config_file="config/config_file", load_config_from_file=True, debug=False):
     print >> sys.stderr,  80 * "="
     print >> sys.stderr, "INITIALIZING"
     print >> sys.stderr, 80 * "="
@@ -586,8 +586,8 @@ if __name__ == '__main__':
         train_main(debug=('debug' in sys.argv), reload_data=('rewrite' in sys.argv), load_vars_from_file=('resume' in sys.argv))
     elif 'test' in sys.argv:
         test_main(sys.argv[2], 
-            test_file=(sys.argv[sys.argv.index('-t') + 1] if '-t' in sys.argv), 
-            decoder_method=(sys.argv[sys.argv.index('-m') + 1] if '-m' in sys.argv), 
+            test_file=(sys.argv[sys.argv.index('-t') + 1] if '-t' in sys.argv else None), 
+            decoder_method=(sys.argv[sys.argv.index('-m') + 1] if '-m' in sys.argv else "beam"), 
             debug=('debug' in sys.argv))
     else:
         print >> sys.stderr, "please specify your model: \"train\" or \"test\""
