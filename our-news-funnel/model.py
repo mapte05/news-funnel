@@ -273,7 +273,7 @@ class RushModel:
                 assert best_beams.get_shape() == (self.config.batch_size, self.config.beam_size)
                 
                 padded_predictions = tf.concat_v2([
-                    tf.gather_nd(padded_predictions, best_beams),
+                    tf.gather_nd(padded_predictions, tf.expand_dims(best_beams, -1)),
                     best_words
                 ], 2)
             
