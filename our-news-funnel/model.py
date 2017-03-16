@@ -261,7 +261,7 @@ class RushModel:
                 logits = tf.transpose(logits, [1,0,2])
                 assert logits.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.vocab_size)
                 
-                log_probs = prediction_log_probs + tf.nn.log_softmax(logits=logits) # note broadcasting
+                log_probs = tf.expand_dims(prediction_log_probs, -1) + tf.nn.log_softmax(logits=logits)
                 assert log_probs.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.vocab_size)
             
                 collapsed_log_probs = tf.reshape(log_probs, (self.config.batch_size, self.config.beam_size*self.config.vocab_size))
