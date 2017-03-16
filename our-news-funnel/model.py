@@ -141,9 +141,9 @@ class RushModel:
         logits_bias_init = self.word_distribution
         attention_bias_init = -0.22 * np.array(range(self.config.article_length), dtype=np.float32) # Decaying attention
         decoder_init = tf.concat_v2([
-            tf.transpose(embed_init), 
-            tf.transpose(embed_init), 
-            xavier_init((self.config.hidden_size, self.config.vocab_size))
+            embed_init, 
+            embed_init, 
+            xavier_init((self.config.vocab_size, self.config.hidden_size))
         ], 0)
         attention_init = tf.concat_v2([np.eye(self.config.embed_size, dtype=np.float32)] * self.config.context_size, 1)
 
