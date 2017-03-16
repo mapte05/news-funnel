@@ -86,7 +86,10 @@ class Config(object):
 
 class RushModel:
 
-    def __init__(self, config, word2vec_embeddings=None, word_distribution=None):
+    def __init__(self, config, word2vec_embeddings=None, word_distribution=None):    
+        self.config = config
+        self.defined = False
+        
         if word2vec_embeddings is not None:
             self.word2vec_embeddings = tf.nn.l2_normalize(word2vec_embeddings, 1)
         else:
@@ -96,9 +99,6 @@ class RushModel:
             self.word_distribution = np.log((word_distribution + 1).astype(np.float32))
         else:
             self.word_distribution = tf.zeros(shape=(self.config.vocab_size,), dtype=tf.int32)
-            
-        self.config = config
-        self.defined = False
 
     def add_placeholders(self):
         self.input_placeholder = tf.placeholder(tf.int32, [None, self.config.article_length])
