@@ -37,7 +37,7 @@ class Config(object):
     #n_layers = 3 # taken from Rush (L)
     lr = 0.005 # taken from Rush
     lr_decay_base = .5 # taken from Rush
-    lr_decay_after_steps = 100000
+    lr_decay_after_steps = 10000
     lr_staircase = False
     smoothing_window = 2 # taken from Rush (Q)
     beam_size = 5
