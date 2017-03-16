@@ -257,7 +257,7 @@ class RushModel:
                 contexts = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
                 
                 contexts = tf.transpose(contexts, [1,0,2])
-                logits = tf.map_fn((lambda context: self.do_prediction_step(articles, context)[0]), contexts, dtype=np.float32)
+                logits = tf.map_fn((lambda context: self.do_prediction_step(articles, context, suppress_unknown=True)[0]), contexts, dtype=np.float32)
                 logits = tf.transpose(logits, [1,0,2])
                 assert logits.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.vocab_size)
                 
@@ -502,7 +502,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
 
 
 
-def test_main(param_file, config_file="config/config_file", load_config_from_file=True, debug=False):
+def test_main(param_file, test_file=None, config_file="config/config_file", load_config_from_file=True, debug=False):
     print >> sys.stderr,  80 * "="
     print >> sys.stderr, "INITIALIZING"
     print >> sys.stderr, 80 * "="
@@ -514,6 +514,9 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
         config = load_config(config_file)
     else:
         config = Config()
+    
+    if test_file is None:
+        test_file = config.test_article_file
 
     print >> sys.stderr, "Loading embedding data...",
     start = time.time()
@@ -523,7 +526,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 
     print >> sys.stderr, "Loading test data...",
     start = time.time()
-    test_articles = load_data(config.test_article_file)
+    test_articles = load_data(test_file)
     test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
@@ -579,11 +582,9 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 
 
 if __name__ == '__main__':
-    assert(1 < len(sys.argv) <= 4)
-    debug = False
     if 'train' in sys.argv:
         train_main(debug=('debug' in sys.argv), reload_data=('rewrite' in sys.argv), load_vars_from_file=('resume' in sys.argv))
     elif 'test' in sys.argv:
-        test_main(sys.argv[2], debug=('debug' in sys.argv))
+        test_main(sys.argv[2], test_file=(sys.argv[sys.argv.index('-t') + 1] if '-t' in sys.argv), debug=('debug' in sys.argv))
     else:
         print >> sys.stderr, "please specify your model: \"train\" or \"test\""
