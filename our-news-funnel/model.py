@@ -31,7 +31,7 @@ class Config(object):
     summary_length = None # set during preprocessing
     article_length = None # set during preprocessing
     embed_size = None # set during preprocessing (Rush: D = 200)
-    hidden_size = 400 # taken from Rush (H)
+    hidden_size = 200 # taken from Rush (H = 400)
     batch_size = 512 # Rush uses 64
     #n_epochs = 15 # taken from Rush
     #n_layers = 3 # taken from Rush (L)
@@ -43,7 +43,7 @@ class Config(object):
     beam_size = 5
     encoding_method = "attention" # "attention" or "bag-of-words"
     
-    test_interval = 2500
+    test_interval = 50
     renormalize_interval = 7800
     
     max_vocab = 75000 # Nallapati 150k
@@ -140,6 +140,12 @@ class RushModel:
         # Our custom initializations
         logits_bias_init = self.word_distribution
         attention_bias_init = -0.22 * np.array(range(self.config.article_length), dtype=np.float32) # Decaying attention
+        decoder_init = tf.concat_v2([
+            tf.transpose(embed_init), 
+            tf.transpose(embed_init), 
+            xavier_init((self.config.hidden_size, self.config.vocab_size))
+        ], 0)
+        attention_init = tf.concat_v2([np.eye(self.config.embed_size, dtype=np.float32)] * self.config.context_size, 1)
 
         with tf.variable_scope("prediction_step", reuse=self.defined):
             output_embeddings = tf.get_variable("E", initializer=embed_init)
@@ -153,12 +159,14 @@ class RushModel:
             U = tf.get_variable("U", shape=(self.config.context_size*self.config.embed_size, self.config.hidden_size), initializer=xavier_init, dtype=tf.float32)
             b1 = tf.get_variable("b1", shape=(1, self.config.hidden_size), initializer=zero_init, dtype=tf.float32)
             
-            V = tf.get_variable("V",  shape=(self.config.vocab_size, self.config.hidden_size + self.config.embed_size), initializer=xavier_init, dtype=tf.float32) # TODO: Might need tweaking depend on encoding method
+            #V = tf.get_variable("V",  shape=(self.config.vocab_size, self.config.hidden_size + self.config.embed_size), initializer=xavier_init, dtype=tf.float32)
+            V = tf.get_variable("V",  initializer=decoder_init)
             #b2 = tf.get_variable("b2", shape=(1, self.config.vocab_size), initializer=logits_bias_init)
             b2 = tf.get_variable("b2", initializer=logits_bias_init)
 
-            P = tf.get_variable("P", shape=(self.config.embed_size, self.config.embed_size*self.config.context_size), initializer=xavier_init, dtype=tf.float32)
+            #P = tf.get_variable("P", shape=(self.config.embed_size, self.config.embed_size*self.config.context_size), initializer=xavier_init, dtype=tf.float32)
             #b3 = tf.get_variable("b3", shape=(1, self.config.article_length), initializer=attention_bias_init)
+            P = tf.get_variable("P", initializer=attention_init)
             b3 = tf.get_variable("b3", initializer=attention_bias_init)
             self.defined = True
         
