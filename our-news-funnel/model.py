@@ -237,7 +237,7 @@ class RushModel:
         cross_entropy_loss = tf.nn.sampled_softmax_loss(V, b, activations, summaries, 2048, self.config.vocab_size)
         return tf.reduce_mean(tf.boolean_mask(cross_entropy_loss, null_mask))
         
-    def predict(self, articles, method="greedy"):
+    def predict(self, articles, method="beam"):
         if method == "greedy":
             padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
             for i in range(self.config.summary_length):
