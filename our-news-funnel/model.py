@@ -273,7 +273,7 @@ class RushModel:
                 assert best_beams.get_shape() == (self.config.batch_size, self.config.beam_size)
                 
                 best_beams_with_batch_indices = tf.stack([
-                    tf.tile(tf.expand_dims(tf.range(self.config.batch_size), 0), [1, self.config.beam_size]),
+                    tf.tile(tf.expand_dims(tf.range(self.config.batch_size), 1), [1, self.config.beam_size]),
                     best_beams
                 ], 2)
                 reselected_padded_predictions = tf.gather(padded_predictions, best_beams_with_batch_indices)
