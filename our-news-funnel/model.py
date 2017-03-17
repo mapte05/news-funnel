@@ -257,7 +257,7 @@ class RushModel:
             prediction_log_probs = tf.fill([self.config.batch_size, self.config.beam_size], 0.)
             for i in range(self.config.summary_length):
                 contexts = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
-                print >> sys.stderr, "Sanity check"
+                
                 contexts = tf.transpose(contexts, [1,0,2])
                 logits = tf.map_fn((lambda context: self.do_prediction_step(articles, context, suppress_unknown=True)[0]), contexts, dtype=np.float32)
                 logits = tf.transpose(logits, [1,0,2])
@@ -268,6 +268,7 @@ class RushModel:
             
                 collapsed_log_probs = tf.reshape(log_probs, (self.config.batch_size, self.config.beam_size*self.config.vocab_size))
                 prediction_log_probs, indices = tf.nn.top_k(input=collapsed_log_probs, k=self.config.beam_size) 
+                prediction_log_probs = tf.Print(prediction_log_probs, [prediction_log_probs]) # print
                 best_words = tf.mod(indices, self.config.vocab_size)
                 best_beams = tf.div(indices, self.config.vocab_size)
                 assert prediction_log_probs.get_shape() == (self.config.batch_size, self.config.beam_size)
