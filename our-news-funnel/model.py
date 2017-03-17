@@ -284,7 +284,8 @@ class RushModel:
                 assert reselected_padded_predictions.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.context_size + i)
                 padded_predictions = tf.concat_v2([reselected_padded_predictions, tf.expand_dims(best_words, -1)], 2)
             
-            return tf.squeeze(tf.slice(padded_predictions, [0, 0, self.config.context_size], [-1, 1, -1]), [1])
+            #return tf.squeeze(tf.slice(padded_predictions, [0, 0, self.config.context_size], [-1, 1, -1]), [1])
+            return tf.reshape(tf.slice(padded_predictions, [0, 0, self.config.context_size], [-1, -1, -1]), (-1, self.config.summary_length))
     
         else:
             raise Exception("predict method not greedy or beam")
