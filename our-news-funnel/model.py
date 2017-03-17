@@ -254,7 +254,10 @@ class RushModel:
         
         elif method == "beam":            
             padded_predictions = tf.fill([self.config.batch_size, self.config.beam_size, self.config.context_size], self.config.start_token)
-            prediction_log_probs = tf.fill([self.config.batch_size, self.config.beam_size], 0.)
+            prediction_log_probs = tf.concat_v2([
+                tf.fill([self.config.batch_size, 1], 0.),
+                tf.fill([self.config.batch_size, self.config.beam_size - 1], float('-inf'))
+            ], 1)
             for i in range(self.config.summary_length):
                 contexts = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
                 
@@ -280,7 +283,7 @@ class RushModel:
                     best_beams
                 ], 2)
                 assert best_beams_with_batch_indices.get_shape() == (self.config.batch_size, self.config.beam_size, 2)
-                print >> sys.stderr,  "="
+                
                 reselected_padded_predictions = tf.gather_nd(padded_predictions, best_beams_with_batch_indices)
                 assert reselected_padded_predictions.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.context_size + i)
                 padded_predictions = tf.concat_v2([reselected_padded_predictions, tf.expand_dims(best_words, -1)], 2)
