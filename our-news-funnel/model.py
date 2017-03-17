@@ -238,6 +238,8 @@ class RushModel:
         return tf.reduce_mean(tf.boolean_mask(cross_entropy_loss, null_mask))
         
     def predict(self, articles, method="greedy"):
+        assert method in ["greedy", "beam"]
+    
         if method == "greedy":
             padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
             for i in range(self.config.summary_length):
@@ -255,7 +257,7 @@ class RushModel:
             prediction_log_probs = tf.fill([self.config.batch_size, self.config.beam_size], 0.)
             for i in range(self.config.summary_length):
                 contexts = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
-                
+                print >> sys.stderr, "Sanity check"
                 contexts = tf.transpose(contexts, [1,0,2])
                 logits = tf.map_fn((lambda context: self.do_prediction_step(articles, context, suppress_unknown=True)[0]), contexts, dtype=np.float32)
                 logits = tf.transpose(logits, [1,0,2])
@@ -277,7 +279,7 @@ class RushModel:
                     best_beams
                 ], 2)
                 assert best_beams_with_batch_indices.get_shape() == (self.config.batch_size, self.config.beam_size, 2)
-                
+                print >> sys.stderr,  "="
                 reselected_padded_predictions = tf.gather_nd(padded_predictions, best_beams_with_batch_indices)
                 assert reselected_padded_predictions.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.context_size + i)
                 padded_predictions = tf.concat_v2([reselected_padded_predictions, tf.expand_dims(best_words, -1)], 2)
