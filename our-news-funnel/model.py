@@ -518,6 +518,8 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
     else:
         config = Config()
     
+    config.batch_size = 32
+    
     if test_file is None:
         test_file = config.test_article_file
 
