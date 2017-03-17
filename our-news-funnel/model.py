@@ -271,7 +271,6 @@ class RushModel:
             
                 collapsed_log_probs = tf.reshape(log_probs, (self.config.batch_size, self.config.beam_size*self.config.vocab_size))
                 prediction_log_probs, indices = tf.nn.top_k(input=collapsed_log_probs, k=self.config.beam_size) 
-                prediction_log_probs = tf.Print(prediction_log_probs, [prediction_log_probs]) # print
                 best_words = tf.mod(indices, self.config.vocab_size)
                 best_beams = tf.div(indices, self.config.vocab_size)
                 assert prediction_log_probs.get_shape() == (self.config.batch_size, self.config.beam_size)
@@ -288,8 +287,10 @@ class RushModel:
                 assert reselected_padded_predictions.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.context_size + i)
                 padded_predictions = tf.concat_v2([reselected_padded_predictions, tf.expand_dims(best_words, -1)], 2)
             
-            #return tf.squeeze(tf.slice(padded_predictions, [0, 0, self.config.context_size], [-1, 1, -1]), [1])
-            return tf.reshape(tf.slice(padded_predictions, [0, 0, self.config.context_size], [-1, -1, -1]), (-1, self.config.summary_length))
+            return tf.squeeze(tf.slice(padded_predictions, [0, 0, self.config.context_size], [-1, 1, -1]), [1])
+            
+            # Print all k possibilities
+            #return tf.reshape(tf.slice(padded_predictions, [0, 0, self.config.context_size], [-1, -1, -1]), (-1, self.config.summary_length))
     
         else:
             raise Exception("predict method not greedy or beam")
