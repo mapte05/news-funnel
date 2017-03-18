@@ -168,6 +168,7 @@ class RushModel:
             
             if suppress_unknown:
                 b2 = b2 - tf.one_hot([self.config.unknown_token], self.config.vocab_size, on_value=100000.)
+                #b2 = b2 - tf.one_hot([self.config.end_token], self.config.vocab_size, on_value=100000.)
             
             h = tf.tanh(tf.matmul(embedded_context, U) + b1)
             logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
@@ -188,7 +189,7 @@ class RushModel:
         cross_entropy_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=summaries)
         return tf.reduce_mean(tf.boolean_mask(cross_entropy_loss, null_mask))
         
-    def predict(self, articles, method="greedy"):
+    def predict(self, articles, method="beam"):
         if method == "greedy":
             padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
             for i in range(self.config.summary_length):
@@ -200,48 +201,46 @@ class RushModel:
                 
                 padded_predictions = tf.concat_v2([padded_predictions, tf.expand_dims(tf.to_int32(tf.argmax(logits, axis=1)), -1)], 1)
             return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
-        """
+
         elif method == "beam":
-            padded_predictions = tf.fill(self.config.start_token, [self.config.batch_size, self.config.beam_size, self.config.context_size])
-            prediction_log_probs = tf.fill(0, [self.config.batch_size, self.config.beam_size])
+            padded_predictions = tf.fill([self.config.batch_size, self.config.beam_size, self.config.context_size], self.config.start_token)
+            prediction_log_probs = tf.concat_v2([
+                tf.fill([self.config.batch_size, 1], 0.),
+                tf.fill([self.config.batch_size, self.config.beam_size - 1], float('-inf'))
+            ], 1)
             for i in range(self.config.summary_length):
-                context = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
+                contexts = tf.slice(padded_predictions, [0, 0, i], [-1, -1, self.config.context_size])
                 
-                log_probs = prediction_log_probs + tf.nn.log_softmax(logits=do_prediction_step(articles, context)) 
+                contexts = tf.transpose(contexts, [1,0,2])
+                logits = tf.map_fn((lambda context: self.do_prediction_step(articles, context, suppress_unknown=True)), contexts, dtype=np.float32)
+                logits = tf.transpose(logits, [1,0,2])
+                assert logits.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.vocab_size)
+                
+                log_probs = tf.expand_dims(prediction_log_probs, -1) + tf.nn.log_softmax(logits=logits)
                 assert log_probs.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.vocab_size)
             
-                best_log_probs, best_words = tf.nn.top_k(input=log_probs, k=self.config.beam_size) 
-                assert best_log_probs.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.beam_size)
-                assert best_words.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.beam_size)
-                
-                best_log_probs = tf.reshape(best_log_probs, (self.config.batch_size, self.config.beam_size**2))
-                best_words = tf.reshape(best_words, (self.config.batch_size, self.config.beam_size**2))
-                prediction_log_probs, best_indices = tf.nn.top_k(input=best_log_probs, k=self.config.beam_size) 
+                collapsed_log_probs = tf.reshape(log_probs, (self.config.batch_size, self.config.beam_size*self.config.vocab_size))
+                prediction_log_probs, indices = tf.nn.top_k(input=collapsed_log_probs, k=self.config.beam_size) 
+                best_words = tf.mod(indices, self.config.vocab_size)
+                best_beams = tf.div(indices, self.config.vocab_size)
                 assert prediction_log_probs.get_shape() == (self.config.batch_size, self.config.beam_size)
-                assert best_indices.get_shape() == (self.config.batch_size, self.config.beam_size)
+                assert best_words.get_shape() == (self.config.batch_size, self.config.beam_size)
+                assert best_beams.get_shape() == (self.config.batch_size, self.config.beam_size)
                 
-                best_beams = tf.mod(best_indices, self.config.beam_size)
-                best_subbeams = tf.truncatediv(best_indices, self.config.beam_size)
+                best_beams_with_batch_indices = tf.stack([
+                    tf.tile(tf.expand_dims(tf.range(self.config.batch_size), 1), [1, self.config.beam_size]),
+                    best_beams
+                ], 2)
+                assert best_beams_with_batch_indices.get_shape() == (self.config.batch_size, self.config.beam_size, 2)
                 
-                
-                
-                # dimensions: batch, beam, beam
-                
-                
-                
-                padded_predictions = tf.concat_v2(
-                    padded_prediction[best_indices.remove_last_dim + :], 
-                    best_indices.last_dim
-                )
-                # dimensions: 
-                
-                prediction_log_probs = best_log_probs
-                
-                padded_predictions = tf.stack()
-                prediction_logits = 
-        """        
-        # else:
-        #     raise Exception("predict method not greedy or beam")
+                reselected_padded_predictions = tf.gather_nd(padded_predictions, best_beams_with_batch_indices)
+                assert reselected_padded_predictions.get_shape() == (self.config.batch_size, self.config.beam_size, self.config.context_size + i)
+                padded_predictions = tf.concat_v2([reselected_padded_predictions, tf.expand_dims(best_words, -1)], 2)
+            
+            return tf.squeeze(tf.slice(padded_predictions, [0, 0, self.config.context_size], [-1, 1, -1]), [1])
+            
+        else:
+            raise Exception("predict method not greedy or beam")
 
     def add_training_op(self, loss):
         """Sets up the training Ops.
@@ -451,7 +450,7 @@ def train_main(config_file="config/config_file", debug=True, reload_data=False, 
 
 
 
-def test_main(param_file, config_file="config/config_file", load_config_from_file=True, debug=False):
+def test_main(param_file, test_file=None, config_file="config/config_file", load_config_from_file=True, debug=False):
     print >> sys.stderr,  80 * "="
     print >> sys.stderr, "INITIALIZING"
     print >> sys.stderr, 80 * "="
@@ -464,6 +463,11 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
     else:
         config = Config()
 
+    config.batch_size = 32
+    
+    if test_file is None:
+        test_file = config.test_article_file
+        
     print >> sys.stderr, "Loading embedding data...",
     start = time.time()
     embeddings, token_to_id, id_to_token = load_embeddings(config.embedding_file, config.max_vocab)
@@ -472,7 +476,7 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
 
     print >> sys.stderr, "Loading test data...",
     start = time.time()
-    test_articles = load_data(config.test_article_file)
+    test_articles = load_data(test_file)
     test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
@@ -524,15 +528,14 @@ def test_main(param_file, config_file="config/config_file", load_config_from_fil
                         coord.request_stop()
                         coord.join([thread])
                         return
-
-
+                sys.stdout.flush()
 
 if __name__ == '__main__':
-    assert(1 < len(sys.argv) <= 4)
-    debug = False
     if 'train' in sys.argv:
         train_main(debug=('debug' in sys.argv), reload_data=('rewrite' in sys.argv), load_vars_from_file=('resume' in sys.argv))
     elif 'test' in sys.argv:
-        test_main(sys.argv[2], debug=('debug' in sys.argv))
+        test_main(sys.argv[2], 
+            test_file=(sys.argv[sys.argv.index('-t') + 1] if '-t' in sys.argv else None), 
+            debug=('debug' in sys.argv))
     else:
         print >> sys.stderr, "please specify your model: \"train\" or \"test\""
