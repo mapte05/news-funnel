@@ -168,7 +168,7 @@ class RushModel:
             
             if suppress_unknown:
                 b2 = b2 - tf.one_hot([self.config.unknown_token], self.config.vocab_size, on_value=100000.)
-                b2 = b2 - tf.one_hot([self.config.end_token], self.config.vocab_size, on_value=100000.)
+                #b2 = b2 - tf.one_hot([self.config.end_token], self.config.vocab_size, on_value=100000.)
             
             h = tf.tanh(tf.matmul(embedded_context, U) + b1)
             logits = tf.matmul(h, V) + tf.matmul(encoded, W) + b2
