@@ -608,7 +608,7 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
                 i += 1
                 print i
                 
-                if i >= test_articles.shape[0]:
+                if i >= test_articles.shape[0] or i >= 100:
                     with open("data.js", "w+") as f:
                         f.write('visualize(')
                         json.dump(returns, f)
