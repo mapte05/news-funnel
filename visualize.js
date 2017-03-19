@@ -88,7 +88,7 @@ function load_item(item) {
 			var choices_spans = words_to_span(item['choices'][k]);
 			choices_spans.forEach((span, j) => {
 				div.appendChild(span);
-				assign_opacity(span, 0.4 + 0.6*Math.sqrt(item['probs'][k][j]/item['probs'][k][0]));
+				assign_opacity(span, 0.1 + 0.9*(item['probs'][k][j]/item['probs'][k][0]));
 			});
 			div.style.opacity = 0.0;
 			summary_container.appendChild(div)
