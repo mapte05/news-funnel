@@ -250,8 +250,8 @@ class RushModel:
                 logits, _, p = self.do_prediction_step(articles, context, suppress_unknown=True)
                 top_logits, indices = tf.nn.top_k(logits, sorted=True)
                 attentions.append(p)
-                choices.append(indices)
-                probs.append(top_logits)
+                choices.append(tf.squeeze(indices, -1))
+                probs.append(tf.squeeze(top_logits, -1))
                 
                 # Experiment: use only common words
                 #logits = tf.slice(logits, [0, 0], [-1, 30000])
