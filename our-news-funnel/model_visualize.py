@@ -556,8 +556,8 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
 
     print >> sys.stderr, "Loading test data...",
     start = time.time()
-    test_articles = load_data(test_file)
-    test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
+    test_articles_ = load_data(test_file)
+    test_articles = preprocess_data(test_articles_, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
     def load_example(sess, enqueue, coord):
@@ -596,11 +596,11 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
         with coord.stop_on_exception():
             i = 0
             while True:
-                articles, attentions, choices, probs = sess.run([article_batch] + predictions)
+                attentions, choices, probs = sess.run(predictions)
                 
                 for j in range(len(attentions)):    
                     returns.append([
-                        articles[j],
+                        test_articles_[i],
                         attentions[j],
                         [[id_to_token[word] for word in step] for step in choices[j]],
                         probs[j]
@@ -611,6 +611,7 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
                     if i >= test_articles.shape[0] or i >= 5:
                         with open("out.json", "w+") as f:
                             json.dump(returns, f)
+                            f.flush()
                         
                         print 'done'
                         coord.request_stop()
