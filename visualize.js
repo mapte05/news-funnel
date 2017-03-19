@@ -65,7 +65,7 @@ function load_item(item) {
 			input_spans.forEach(span => { span.style.opacity = 0.1; })
 			
 			var attention = item['input'].map((input, i) => {
-				var slice = item['attention'][k].slice(Math.max(i - 2, 0), Math.min(i + 2, item['input'].length -1));
+				var slice = item['attention'][k].slice(Math.max(i - 2, 0), Math.min(i + 3, item['input'].length -1));
 				return slice.reduce((a,x) => a + x, 0) / slice.length || 0;
 			});
 			var max_p = Math.max.apply(null, attention)
@@ -124,7 +124,7 @@ function load_item(item) {
 			else
 				run(() => next(k+1), t+=50)
 		}
-		run(() => next(0), 1000);
+		run(() => next(0), 2000);
 	});
 }
 
