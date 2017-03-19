@@ -599,19 +599,18 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
             attentions, choices, probs = sess.run(predictions)
             
             for j in range(len(attentions)):    
-                returns.append([
-                    test_articles_[i],
-                    attentions[j].tolist(),
-                    [[id_to_token[word] for word in step] for step in choices[j].tolist()],
-                    probs[j].tolist()
-                ])
+                returns.append({
+                    'input': test_articles_[i],
+                    'attention': attentions[j].tolist(),
+                    'choices': [[id_to_token[word] for word in step] for step in choices[j].tolist()],
+                    'logits': probs[j].tolist()
+                })
                 i += 1
                 print i
                 
                 if i >= test_articles.shape[0] or i >= 5:
                     with open("out.json", "w+") as f:
                         json.dump(returns, f)
-                        f.flush()
                     
                     print 'done'
                     coord.request_stop()
