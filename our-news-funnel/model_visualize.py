@@ -593,30 +593,30 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
         print >> sys.stderr,  "TESTING"
         print >> sys.stderr,  80 * "="
         returns = []
-        with coord.stop_on_exception():
-            i = 0
-            while True:
-                attentions, choices, probs = sess.run(predictions)
+        #with coord.stop_on_exception():
+        i = 0
+        while True:
+            attentions, choices, probs = sess.run(predictions)
+            
+            for j in range(len(attentions)):    
+                returns.append([
+                    test_articles_[i],
+                    attentions[j],
+                    [[id_to_token[word] for word in step] for step in choices[j]],
+                    probs[j]
+                ])
+                i += 1
+                print i
                 
-                for j in range(len(attentions)):    
-                    returns.append([
-                        test_articles_[i],
-                        attentions[j],
-                        [[id_to_token[word] for word in step] for step in choices[j]],
-                        probs[j]
-                    ])
-                    i += 1
-                    print i
+                if i >= test_articles.shape[0] or i >= 5:
+                    with open("out.json", "w+") as f:
+                        json.dump(returns, f)
+                        f.flush()
                     
-                    if i >= test_articles.shape[0] or i >= 5:
-                        with open("out.json", "w+") as f:
-                            json.dump(returns, f)
-                            f.flush()
-                        
-                        print 'done'
-                        coord.request_stop()
-                        coord.join([thread])
-                        return
+                    print 'done'
+                    coord.request_stop()
+                    coord.join([thread])
+                    return
 
 
 if __name__ == '__main__':
