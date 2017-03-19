@@ -248,7 +248,7 @@ class RushModel:
             for i in range(self.config.summary_length):
                 context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
                 logits, _, p = self.do_prediction_step(articles, context, suppress_unknown=True)
-                top_logits, indices = tf.nn.top_k(logits, axis=1, sorted=True)
+                top_logits, indices = tf.nn.top_k(logits, sorted=True)
                 attentions.append(p)
                 choices.append(indices)
                 probs.append(top_logits)
