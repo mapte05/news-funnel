@@ -596,7 +596,7 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
             i = 0
             while True:
                 attentions, choices, probs = sess.run(predictions)
-                print attentions, choices, probs
+                print attentions.tolist(), choices.tolist(), probs.tolist()
                 '''
                 for summary in summaries.tolist():
                     for id in summary:
