@@ -1,2 +1,0 @@
-ROUGE-Type,Task Name,System Name,Avg_Recall,Avg_Precision,Avg_F-Score,Num Reference Summaries
-ROUGE-1,GIGA,SYS-151000.TXT,0.45357,0.57779,0.50820,1
