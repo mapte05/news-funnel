@@ -16,7 +16,7 @@ import os
 import glob
 import shutil
 from utils.model_utils import load_embeddings, load_data, preprocess_data, count_words
-
+import json
 
 class Config(object):
     """Holds model hyperparams and data information.
@@ -194,12 +194,11 @@ class RushModel:
             
             if suppress_unknown:
                 b2 = b2 - tf.one_hot([self.config.unknown_token], self.config.vocab_size, on_value=100000.)
-                #b2 = b2 - tf.one_hot([self.config.end_token], self.config.vocab_size, on_value=100000.)
             
             h = tf.tanh(tf.matmul(embedded_context, U) + b1)
             x = tf.concat_v2([h, encoded], 1)
             logits = tf.matmul(x, tf.transpose(V)) + b2
-            return logits, x
+            return logits, x, p
 
     def add_loss_op(self, articles, summaries):
         logits = []
@@ -239,8 +238,28 @@ class RushModel:
         return tf.reduce_mean(tf.boolean_mask(cross_entropy_loss, null_mask))
         
     def predict(self, articles, method="greedy"):
-        assert method in ["greedy", "beam"]
-    
+        assert method in ["greedy", "beam", "visualize"]
+        
+        if method == "visualize":
+            attentions = []
+            choices = []
+            probs = []
+            padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
+            for i in range(self.config.summary_length):
+                context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
+                logits, _, p = self.do_prediction_step(articles, context, suppress_unknown=True)
+                top_logits, indices = tf.nn.top_k(logits, sorted=True)
+                attentions.append(p)
+                choices.append(tf.squeeze(indices, -1))
+                probs.append(tf.squeeze(top_logits, -1))
+                
+                # Experiment: use only common words
+                #logits = tf.slice(logits, [0, 0], [-1, 30000])
+                
+                padded_predictions = tf.concat_v2([padded_predictions, tf.expand_dims(tf.to_int32(tf.argmax(logits, axis=1)), -1)], 1)
+            #return tf.slice(padded_predictions, [0, self.config.context_size], [-1, -1])
+            return tf.stack(attentions, axis=1), tf.stack(choices, axis=1), tf.stack(probs, axis=1)
+            
         if method == "greedy":
             padded_predictions = tf.fill([self.config.batch_size, self.config.context_size], self.config.start_token)
             for i in range(self.config.summary_length):
@@ -524,7 +543,7 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
     else:
         config = Config()
     
-    config.batch_size = 32
+    config.batch_size = 2
     
     if test_file is None:
         test_file = config.test_article_file
@@ -538,7 +557,6 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
     print >> sys.stderr, "Loading test data...",
     start = time.time()
     test_articles = load_data(test_file)
-    #config.article_length = max(len(x) for x in test_articles) + 1
     test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
@@ -561,7 +579,7 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
     
     article_batch = queue.dequeue_many(config.batch_size)
     article_batch = tf.reshape(article_batch, (config.batch_size, config.article_length)) # hacky
-    predictions = model.predict(article_batch, method=decoder_method)
+    predictions = list(model.predict(article_batch, method="visualize"))
 
     saver = tf.train.Saver()
     with tf.Session() as sess:
@@ -577,7 +595,9 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
         with coord.stop_on_exception():
             i = 0
             while True:
-                summaries, = sess.run([predictions])
+                attentions, choices, probs = sess.run(predictions)
+                print attentions.tolist(), choices.tolist(), probs.tolist()
+                '''
                 for summary in summaries.tolist():
                     for id in summary:
                         if id == config.end_token:
@@ -590,14 +610,13 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
                         coord.request_stop()
                         coord.join([thread])
                         return
-                sys.stdout.flush()
-
-
+                '''
 
 
 if __name__ == '__main__':
     if 'train' in sys.argv:
-        train_main(debug=('debug' in sys.argv), reload_data=('rewrite' in sys.argv), load_vars_from_file=('resume' in sys.argv))
+        #train_main(debug=('debug' in sys.argv), reload_data=('rewrite' in sys.argv), load_vars_from_file=('resume' in sys.argv))
+        pass
     elif 'test' in sys.argv:
         test_main(sys.argv[2], 
             test_file=(sys.argv[sys.argv.index('-t') + 1] if '-t' in sys.argv else None), 
