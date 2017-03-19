@@ -248,10 +248,10 @@ class RushModel:
             for i in range(self.config.summary_length):
                 context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
                 logits, _, p = self.do_prediction_step(articles, context, suppress_unknown=True)
-                top_logits, indices = tf.nn.top_k(logits, sorted=True)
+                top_logits, indices = tf.nn.top_k(logits, sorted=True, k=5)
                 attentions.append(p)
-                choices.append(tf.squeeze(indices, -1))
-                probs.append(tf.squeeze(top_logits, -1))
+                choices.append(indices)
+                probs.append(top_logits)
                 
                 # Experiment: use only common words
                 #logits = tf.slice(logits, [0, 0], [-1, 30000])
@@ -592,25 +592,31 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
         print >> sys.stderr,  80 * "="
         print >> sys.stderr,  "TESTING"
         print >> sys.stderr,  80 * "="
+        returns = []
         with coord.stop_on_exception():
             i = 0
             while True:
-                attentions, choices, probs = sess.run(predictions)
+                articles, attentions, choices, probs = sess.run([article_batch] + predictions)
                 print attentions.tolist(), choices.tolist(), probs.tolist()
-                '''
-                for summary in summaries.tolist():
-                    for id in summary:
-                        if id == config.end_token:
-                            break
-                        print id_to_token[id],
-                    print ""
+                
+                choices.tolist() 
+                for j in range(len(attentions)):
+                    
+                    returns.append([
+                        articles[j],
+                        attentions[j],
+                        [[id_to_token[word] for word in step] for step in choices[j]]
+                        probs[j]
+                    ])
+                    print i
                     i += 1
                     
-                    if i >= test_articles.shape[0]:
+                    if i >= test_articles.shape[0] or i >= 5:
                         coord.request_stop()
                         coord.join([thread])
+                        
+                        print json.dumps(returns)
                         return
-                '''
 
 
 if __name__ == '__main__':
