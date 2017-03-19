@@ -601,9 +601,9 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
             for j in range(len(attentions)):    
                 returns.append([
                     test_articles_[i],
-                    attentions[j],
-                    [[id_to_token[word] for word in step] for step in choices[j]],
-                    probs[j]
+                    attentions[j].tolist(),
+                    [[id_to_token[word] for word in step] for step in choices[j].tolist()],
+                    probs[j].tolist()
                 ])
                 i += 1
                 print i
