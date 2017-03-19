@@ -608,8 +608,8 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
                 i += 1
                 print i
                 
-                if i >= test_articles.shape[0] or i >= 5:
-                    with open("out.json", "w+") as f:
+                if i >= test_articles.shape[0]:
+                    with open("data.js", "w+") as f:
                         f.write('visualize(')
                         json.dump(returns, f)
                         f.write(')')
