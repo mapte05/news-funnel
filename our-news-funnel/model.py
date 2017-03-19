@@ -538,6 +538,7 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
     print >> sys.stderr, "Loading test data...",
     start = time.time()
     test_articles = load_data(test_file)
+    #config.article_length = max(len(x) for x in test_articles) + 1
     test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
