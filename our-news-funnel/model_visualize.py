@@ -248,10 +248,10 @@ class RushModel:
             for i in range(self.config.summary_length):
                 context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
                 logits, _, p = self.do_prediction_step(articles, context, suppress_unknown=True)
-                top_logits, indices = tf.nn.top_k(logits, sorted=True, k=5)
+                top_probs, indices = tf.nn.top_k(tf.softmax(logits), sorted=True, k=5)
                 attentions.append(p)
                 choices.append(indices)
-                probs.append(top_logits)
+                probs.append(top_probs)
                 
                 # Experiment: use only common words
                 #logits = tf.slice(logits, [0, 0], [-1, 30000])
@@ -603,7 +603,7 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
                     'input': test_articles_[i],
                     'attention': attentions[j].tolist(),
                     'choices': [[id_to_token[word] for word in step] for step in choices[j].tolist()],
-                    'logits': probs[j].tolist()
+                    'probs': probs[j].tolist()
                 })
                 i += 1
                 print i
