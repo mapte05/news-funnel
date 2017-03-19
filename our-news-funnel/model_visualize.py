@@ -609,7 +609,9 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
                     print i
                     
                     if i >= test_articles.shape[0] or i >= 5:
-                        print json.dump(returns, open("out.json", "w+"))
+                        f = open("out.json", "w+")
+                        print json.dump(returns, f)
+                        f.close()
                         print 'done'
                         coord.request_stop()
                         coord.join([thread])
