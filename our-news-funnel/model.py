@@ -194,6 +194,7 @@ class RushModel:
             
             if suppress_unknown:
                 b2 = b2 - tf.one_hot([self.config.unknown_token], self.config.vocab_size, on_value=100000.)
+                #b2 = b2 - tf.one_hot([self.config.end_token], self.config.vocab_size, on_value=100000.)
             
             h = tf.tanh(tf.matmul(embedded_context, U) + b1)
             x = tf.concat_v2([h, encoded], 1)
@@ -588,6 +589,8 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
                         coord.request_stop()
                         coord.join([thread])
                         return
+                sys.stdout.flush()
+
 
 
 
