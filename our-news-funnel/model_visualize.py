@@ -248,10 +248,10 @@ class RushModel:
             for i in range(self.config.summary_length):
                 context = tf.slice(padded_predictions, [0, i], [-1, self.config.context_size])
                 logits, _, p = self.do_prediction_step(articles, context, suppress_unknown=True)
-                top_logits, indices = tf.nn.top_k(logits, sorted=True)
+                top_probs, indices = tf.nn.top_k(tf.nn.softmax(logits), sorted=True, k=5)
                 attentions.append(p)
-                choices.append(tf.squeeze(indices, -1))
-                probs.append(tf.squeeze(top_logits, -1))
+                choices.append(indices)
+                probs.append(top_probs)
                 
                 # Experiment: use only common words
                 #logits = tf.slice(logits, [0, 0], [-1, 30000])
@@ -556,8 +556,8 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
 
     print >> sys.stderr, "Loading test data...",
     start = time.time()
-    test_articles = load_data(test_file)
-    test_articles = preprocess_data(test_articles, token_to_id, config.article_length)
+    test_articles_ = load_data(test_file)
+    test_articles = preprocess_data(test_articles_, token_to_id, config.article_length)
     print >> sys.stderr, "took {:.2f} seconds".format(time.time() - start)
     
     def load_example(sess, enqueue, coord):
@@ -592,25 +592,32 @@ def test_main(param_file, test_file=None, decoder_method="beam", config_file="co
         print >> sys.stderr,  80 * "="
         print >> sys.stderr,  "TESTING"
         print >> sys.stderr,  80 * "="
-        with coord.stop_on_exception():
-            i = 0
-            while True:
-                attentions, choices, probs = sess.run(predictions)
-                print attentions.tolist(), choices.tolist(), probs.tolist()
-                '''
-                for summary in summaries.tolist():
-                    for id in summary:
-                        if id == config.end_token:
-                            break
-                        print id_to_token[id],
-                    print ""
-                    i += 1
+        returns = []
+        #with coord.stop_on_exception():
+        i = 0
+        while True:
+            attentions, choices, probs = sess.run(predictions)
+            
+            for j in range(len(attentions)):    
+                returns.append({
+                    'input': test_articles_[i],
+                    'attention': attentions[j].tolist(),
+                    'choices': [[id_to_token[word] for word in step] for step in choices[j].tolist()],
+                    'probs': probs[j].tolist()
+                })
+                i += 1
+                print i
+                
+                if i >= test_articles.shape[0] or i >= 100:
+                    with open("data.js", "w+") as f:
+                        f.write('visualize(')
+                        json.dump(returns, f)
+                        f.write(')')
                     
-                    if i >= test_articles.shape[0]:
-                        coord.request_stop()
-                        coord.join([thread])
-                        return
-                '''
+                    print 'done'
+                    coord.request_stop()
+                    coord.join([thread])
+                    return
 
 
 if __name__ == '__main__':

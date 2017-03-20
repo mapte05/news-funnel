@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Deep Abstractive Summarization</title>
+		<style>
+body {
+	font-size: 25pt;
+	margin: 2in;
+}
+
+#article {
+	margin-bottom: 1em;
+}
+
+#summary div {
+	display: inline-block;
+	vertical-align: top;
+	margin-right: 1ex;
+}
+#summary div span {
+	display: block;
+}
+
+#article span {
+	transition: opacity 500ms;
+}
+#summary div {
+	transition: opacity 700ms;
+}
+#summary span {
+	transition: opacity 150ms;
+}
+		</style>
+	</head>
+	<body>
+		<div id="article"></div> 
+  
+		<div id="summary"></div>
+	
+		<script src="visualize.js"></script>
+		<script src="data.js"></script>
+	</body>
+</html>
